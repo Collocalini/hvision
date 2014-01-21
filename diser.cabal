@@ -6,15 +6,13 @@ license: PublicDomain
 license-file: ""
 copyright:
 maintainer:
-build-depends: base -any, process -any
+build-depends: base -any, containers -any, parsec -any
 stability:
 homepage:
 package-url:
 bug-reports:
 synopsis:
-description:  
-             .
-             .
+description: .
              .
              .
 category:
