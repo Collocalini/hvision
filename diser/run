@@ -1,0 +1,4 @@
+#cat test1 |gnuplot -persist|ffmpeg -f mjpeg -i pipe: -f avi .avi
+#cat test1 |gnuplot -persist|ffmpeg -f mjpeg -i pipe: -f avi pipe:|mplayer -profile prof3 -
+./diser |gnuplot -persist|ffmpeg -f mjpeg -i pipe: -f avi pipe:|mplayer -profile prof3 -
+#./diser |gnuplot -persist|ffmpeg -f image2 -i pipe: -f avi pipe:|mplayer -profile prof3 -

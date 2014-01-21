@@ -1,0 +1,8 @@
+set terminal jpeg 
+plot '-' using 1:2 title "My Plot 1" with lp
+        1 30
+        2 40
+        3 35
+        4 60
+        5 50
+EOF

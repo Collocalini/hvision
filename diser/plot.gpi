@@ -1,0 +1,3 @@
+set terminal jpeg medium size 640,480
+set yrange [0:255]
+plot '-' using 1:2 title "My Plot 1" with lp 
