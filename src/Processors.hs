@@ -1,10 +1,14 @@
 
 module Processors (
 
-identity,
+identity_i,
+identity_f,
 stringToIntList,
 intListToString,
-derivative
+stringToFloatList,
+floatListToString,
+derivative_i,
+derivative_f
 
 ) where
 
@@ -18,8 +22,8 @@ eol_char = "\n"
 
 {-- ================================================================================================
 ================================================================================================ --}
-identity :: [(Int, Int)] -> [(Int, Int)]
-identity  row = row
+identity_i :: [(Int, Int)] -> [(Int, Int)]
+identity_i  row = row
 ---------------------------------
 
 
@@ -27,10 +31,36 @@ identity  row = row
 
 {-- ================================================================================================
 ================================================================================================ --}
-derivative :: [(Int, Int)] -> [(Int, Int)]
-derivative  [] = []
-derivative  (prev@(x_prev, y_prev):x_rest) = ((\(x, y) -> (x, y-y_prev) ) $ head x_rest):
-             (derivative $ tail x_rest)
+identity_f :: [(Float, Float)] -> [(Float, Float)]
+identity_f  row = row
+---------------------------------
+
+
+
+
+{-- ================================================================================================
+================================================================================================ --}
+
+
+derivative_i :: [(Int, Int)] -> [(Int, Int)]
+derivative_i  [] = []
+derivative_i  row@(prev@(x_prev, y_prev):x_rest) = (x_prev, 0):(step1 row)
+     where
+        step1 :: [(Int, Int)] -> [(Int, Int)]
+        step1  [] = []
+        step1 (prev@(x_prev, y_prev):x_rest) = ((\(x, y) -> (x , y-y_prev) ) $ head x_rest):
+             (step1 $ tail x_rest)
+
+
+
+derivative_f :: [(Float, Float)] -> [(Float, Float)]
+derivative_f  [] = []
+derivative_f  row@(prev@(x_prev, y_prev):x_rest) = (x_prev, 0):(step1 row)
+     where
+        step1 :: [(Float, Float)] -> [(Float, Float)]
+        step1  [] = []
+        step1 (prev@(x_prev, y_prev):x_rest) = ((\(x, y) -> (x_prev + ( (abs $ x - x_prev)/2),
+                                                  y-y_prev) ) $ head x_rest):(step1 $ tail x_rest)
 ---------------------------------
 
 
@@ -50,13 +80,27 @@ stringToIntList str =  map step1 $ lines str
   step1 str = (\x -> (read $ head x , read $ head $ tail x) ) $ words str
 ------------------------------
 
-
+{-- ================================================================================================
+================================================================================================ --}
+stringToFloatList :: String -> [(Float, Float)]
+stringToFloatList str =  map step1 $ lines str
+  where
+  step1 :: String -> (Float, Float)
+  step1 str = (\x -> (read $ head x , read $ head $ tail x) ) $ words str
+------------------------------
 
 
 {-- ================================================================================================
 ================================================================================================ --}
 intListToString :: [(Int, Int)] -> String
 intListToString x = concat $ map (\(x,y) -> (show x) ++ " " ++ (show y) ++ eol_char ) x
+---------------------------------
+
+
+{-- ================================================================================================
+================================================================================================ --}
+floatListToString :: [(Float, Float)] -> String
+floatListToString x = concat $ map (\(x,y) -> (show x) ++ " " ++ (show y) ++ eol_char ) x
 ---------------------------------
 
 

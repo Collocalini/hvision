@@ -155,8 +155,12 @@ routine::[String] -> IO ()
 routine args
   |is_for_test = justtest
   |is_for_bypass = data_bypass tag_DMap' range
-  |identity_processor = data_process tag_DMap' range identity stringToIntList intListToString
-  |derivative_processor = data_process tag_DMap' range derivative stringToIntList intListToString
+  |identity_processor = data_process tag_DMap' range identity_i stringToIntList intListToString
+  |derivative_f_processor = data_process tag_DMap' range derivative_f stringToFloatList
+                                                                                  floatListToString
+  |derivative_i_processor = data_process tag_DMap' range derivative_i stringToIntList
+                                                                                    intListToString
+
   |otherwise = putStr ""
      where
      justtest = do  putStrLn "test"
@@ -177,9 +181,14 @@ routine args
         |"identity" == (DMap.findWithDefault "Not found" argument_data_process $ tag_DMap') = True
         |otherwise = False
 
-     derivative_processor :: Bool
-     derivative_processor
-        |"derivative" == (DMap.findWithDefault "Not found" argument_data_process $ tag_DMap') = True
+     derivative_f_processor :: Bool
+     derivative_f_processor
+        |"derivative_f" == (DMap.findWithDefault "Not found" argument_data_process $ tag_DMap') = True
+        |otherwise = False
+
+     derivative_i_processor :: Bool
+     derivative_i_processor
+        |"derivative_i" == (DMap.findWithDefault "Not found" argument_data_process $ tag_DMap') = True
         |otherwise = False
 
 
@@ -217,7 +226,8 @@ test8 = do
   getArgs >>=
      (\str -> -- $ unwords str
 
-     (data_file' $ data_file_range (tag_DMap str) [1..2]) >>= \x -> putStrLn $ show $ map stringToIntList x    )
+     (data_file' $ data_file_range (tag_DMap str) [1..2]) >>=
+                            \x -> putStrLn $ show $ map stringToIntList x    )
 
 
 test7x=do
