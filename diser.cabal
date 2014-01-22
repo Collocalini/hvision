@@ -13,8 +13,6 @@ package-url:
 bug-reports:
 synopsis:
 description: .
-             .
-             .
 category:
 author:
 tested-with:
@@ -40,7 +38,7 @@ includes:
 install-includes:
 include-dirs:
 hs-source-dirs: src
-other-modules:
+other-modules: Processors Global
 ghc-prof-options:
 ghc-shared-options:
 ghc-options:
