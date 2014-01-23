@@ -61,7 +61,7 @@ data_file' data_file = step1 $ data_file
         step1 (x:rest) = liftM2 (:) x (step1 rest)
 
 iterate_all_data' :: DMap.Map String String ->  [String] -> IO ()
-iterate_all_data' _ [] = putStr ""
+iterate_all_data' _ [] = return ()
 iterate_all_data' tag_DMap x  = iterate_all_data tag_DMap x
 
 
@@ -91,7 +91,7 @@ read_file_if_exists name  = do
 {-- ================================================================================================
 ================================================================================================ --}
 iterate_all_data :: DMap.Map String String -> [String] ->  IO ()
-iterate_all_data _ [] = putStr ""
+iterate_all_data _ [] = return ()
 iterate_all_data tag_DMap (x:rest)  = do
     gnuplot_file tag_DMap >>= \s -> putStr $ s ++ x ++ "\nEOF\n"
     iterate_all_data tag_DMap rest
@@ -147,6 +147,27 @@ data_process_range_sensitive tag_DMap range processor adaptTo adaptFrom = (data_
 
 
 
+{-- ================================================================================================
+================================================================================================ --}
+get_demanded_processors :: String -> [String]
+get_demanded_processors arg = break_to_processors arg $ at_commas arg 0
+    where
+        at_commas :: String -> Int -> [Int]
+        at_commas [] _ = []
+        at_commas (x:rest) i
+           |x == ',' = i:at_commas rest (i+1)
+           |otherwise = at_commas rest (i+1)
+
+        break_to_processors :: String -> [Int] -> [String]
+        break_to_processors str [] = [str]
+        break_to_processors str (i:rest) = (\(s,sr) -> s : (break_to_processors (tail sr) rest) )
+                                                                                    $ splitAt i str
+--------------------------------------------------------------------------------------------------
+
+
+
+
+
 
 
 {-- ================================================================================================
@@ -155,13 +176,15 @@ routine::[String] -> IO ()
 routine args
   |is_for_test = justtest
   |is_for_bypass = data_bypass tag_DMap' range
-  |identity_processor = data_process tag_DMap' range identity_i stringToIntList intListToString
-  |derivative_f_processor = data_process tag_DMap' range derivative_f stringToFloatList
-                                                                                  floatListToString
-  |derivative_i_processor = data_process tag_DMap' range derivative_i stringToIntList
-                                                                                    intListToString
-
-  |otherwise = putStr ""
+  |there_is_processing = execute_demanded_processorS $ get_demanded_processors
+         --  putStrLn $ show $ get_demanded_processors
+              (DMap.findWithDefault default_data_process argument_data_process tag_DMap')
+  |otherwise = return () --putStr ""
+   {-- |
+       |
+       |
+       |
+       V  --}
      where
      justtest = do  putStrLn "test"
 
@@ -176,19 +199,73 @@ routine args
         |"true" == (DMap.findWithDefault "Not found" argument_data_bypass_mode $ tag_DMap') = True
         |otherwise = False
 
+-----peculier section , there is processing to do
+     there_is_processing :: Bool
+     there_is_processing
+        |default_data_process /= (DMap.findWithDefault default_data_process argument_data_process
+                                                                                 tag_DMap') = True
+        |otherwise = False
+
+
+     execute_demanded_processor :: String -> IO ()
+     execute_demanded_processor proc = do
+        --putStrLn proc
+        step1 proc
+        where
+        step1 :: String -> IO ()
+        step1 proc
+            |identity_processor' proc = data_process tag_DMap' range identity_i stringToIntList
+                                                                                intListToString
+            |derivative_f_processor' proc = data_process tag_DMap' range derivative_f stringToFloatList
+                                                                                floatListToString
+            |derivative_i_processor' proc = data_process tag_DMap' range derivative_i stringToIntList
+                                                                                intListToString
+
+            |otherwise = return ()
+
+
+     execute_demanded_processorS :: [String] -> IO ()
+     execute_demanded_processorS [] = return ()
+     execute_demanded_processorS (str:rest) = do
+                                                 --putStrLn str
+
+                                                 execute_demanded_processor str
+                                                 execute_demanded_processorS rest
+-----end of peculier section
+
+
      identity_processor :: Bool
      identity_processor
-        |"identity" == (DMap.findWithDefault "Not found" argument_data_process $ tag_DMap') = True
+        |"identity_i" == (DMap.findWithDefault "Not found" argument_data_process $ tag_DMap') = True
+        |otherwise = False
+
+     identity_processor' :: String -> Bool
+     identity_processor' str
+        |"identity_i" == str = True
         |otherwise = False
 
      derivative_f_processor :: Bool
      derivative_f_processor
-        |"derivative_f" == (DMap.findWithDefault "Not found" argument_data_process $ tag_DMap') = True
+        |"derivative_f" == (DMap.findWithDefault "Not found" argument_data_process $ tag_DMap') =
+                                                                                               True
         |otherwise = False
+
+
+     derivative_f_processor' :: String -> Bool
+     derivative_f_processor' str
+        |"derivative_f" == str = True
+        |otherwise = False
+
 
      derivative_i_processor :: Bool
      derivative_i_processor
-        |"derivative_i" == (DMap.findWithDefault "Not found" argument_data_process $ tag_DMap') = True
+        |"derivative_i" == (DMap.findWithDefault "Not found" argument_data_process $ tag_DMap') =
+                                                                                               True
+        |otherwise = False
+
+     derivative_i_processor' :: String -> Bool
+     derivative_i_processor' str
+        |"derivative_i" == str = True
         |otherwise = False
 
 
