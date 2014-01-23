@@ -169,7 +169,6 @@ get_demanded_processors arg = break_to_processors arg $ at_commas arg 0
 
 
 
-
 {-- ================================================================================================
 ================================================================================================ --}
 routine::[String] -> IO ()
@@ -214,7 +213,7 @@ routine args
         where
         step1 :: String -> IO ()
         step1 proc
-            |identity_processor' proc = data_process tag_DMap' range identity_i stringToIntList
+            |identity_i_processor' proc = data_process tag_DMap' range identity_i stringToIntList
                                                                                 intListToString
             |derivative_f_processor' proc = data_process tag_DMap' range derivative_f stringToFloatList
                                                                                 floatListToString
@@ -234,39 +233,30 @@ routine args
 -----end of peculier section
 
 
-     identity_processor :: Bool
+{--     identity_processor :: Bool
      identity_processor
         |"identity_i" == (DMap.findWithDefault "Not found" argument_data_process $ tag_DMap') = True
-        |otherwise = False
+        |otherwise = False --}
 
-     identity_processor' :: String -> Bool
-     identity_processor' str
-        |"identity_i" == str = True
-        |otherwise = False
 
-     derivative_f_processor :: Bool
+
+{--     derivative_f_processor :: Bool
      derivative_f_processor
         |"derivative_f" == (DMap.findWithDefault "Not found" argument_data_process $ tag_DMap') =
                                                                                                True
-        |otherwise = False
+        |otherwise = False  --}
 
 
-     derivative_f_processor' :: String -> Bool
-     derivative_f_processor' str
-        |"derivative_f" == str = True
-        |otherwise = False
 
 
-     derivative_i_processor :: Bool
+
+{--     derivative_i_processor :: Bool
      derivative_i_processor
         |"derivative_i" == (DMap.findWithDefault "Not found" argument_data_process $ tag_DMap') =
                                                                                                True
-        |otherwise = False
+        |otherwise = False  ---}
 
-     derivative_i_processor' :: String -> Bool
-     derivative_i_processor' str
-        |"derivative_i" == str = True
-        |otherwise = False
+
 
 
      tag_DMap' = tag_DMap args

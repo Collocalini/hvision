@@ -19,6 +19,12 @@ default_test,
 default_data_bypass_mode,
 default_data_process,
 
+
+identity_i_processor',
+identity_f_processor',
+derivative_f_processor',
+derivative_i_processor',
+
 flags ,
 
 options,
@@ -50,6 +56,34 @@ default_range_of_files = "1..1000" -- if range [5..10] then read data5, data6, .
 default_test = "false"
 default_data_bypass_mode = "false"
 default_data_process = "-"
+
+
+
+
+
+identity_i_processor' :: String -> Bool
+identity_i_processor' str
+   |"identity_i" == str = True
+   |otherwise = False
+
+
+identity_f_processor' :: String -> Bool
+identity_f_processor' str
+   |"identity_f" == str = True
+   |otherwise = False
+
+
+derivative_f_processor' :: String -> Bool
+derivative_f_processor' str
+   |"derivative_f" == str = True
+   |otherwise = False
+
+
+derivative_i_processor' :: String -> Bool
+derivative_i_processor' str
+   |"derivative_i" == str = True
+   |otherwise = False
+
 
 flags = [
          argument_test,
