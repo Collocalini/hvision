@@ -22,3 +22,4 @@ xxx
         |ffmpeg -f mjpeg -i pipe: -f avi -vcodec copy -s 1280x511 pipe: \
         |mplayer -profile prof3 -
 
+

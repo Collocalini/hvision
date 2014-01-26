@@ -18,6 +18,8 @@ floatListToString_2to3
 
 ) where
 
+import Data.List
+
 
 eol_char = "\n"
 
@@ -73,6 +75,32 @@ derivative_f  row@(prev@(x_prev, y_prev):x_rest) = (x_prev, 0):(step1 row)
 
 
 -------------------------------- end of section of processors --------------------------------------
+
+
+
+
+
+
+apply_processors :: [([a] -> [a])] -> [a] -> [[a]]
+apply_processors [] _ = []
+apply_processors (processor:rest) input = (processor input):(apply_processors rest input)
+
+
+stack_output :: [    ( ([a] -> ([String], [String])),       [a])     ] -> String
+stack_output (data_plus_adapter@( (adapter, data_) ): rest ) =
+   unlines  (step2 rest $ step_join $ adapter data_)
+   where
+      step_join :: ([String], [String]) -> [String]
+      step_join ([]         , (y:resty)) = ("" ++ " " ++   y) :(step_join ([], resty))
+      step_join ((x:restx)  , [])        = (x  ++ " " ++  "") :(step_join (restx, []))
+      step_join ([]         , [])        = []
+      step_join ((x:restx)  , (y:resty)) = (x  ++ " " ++   y) :(step_join (restx, resty))
+
+      step2 :: [    ( ([a] -> ([String], [String])),       [a])     ] -> [String] -> [String]
+      step2 (data_plus_adapter@( (adapter, data_) ): rest ) already_done =
+            step2 rest $ (\(_, y) -> step_join (already_done, y) ) $ adapter data_
+
+
 
 
 
