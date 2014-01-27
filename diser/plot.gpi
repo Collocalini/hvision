@@ -1,3 +1,3 @@
 set terminal jpeg medium size 1280,511
 set yrange [-255:255]
-plot '-' using 1:2 title "My Plot 1" with lp 
+plot '-' using 1:2 title "My Plot 1" with lp , '-' using 1:3 title "My Plot 2" with lp

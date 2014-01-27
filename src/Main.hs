@@ -21,6 +21,7 @@ main
 import System.IO
 import System.Environment
 import Data.List
+import Data.Dynamic
 import qualified Data.Map as DMap
 import Text.ParserCombinators.Parsec
 --import Text.ParserCombinators.Parsec.Char
@@ -130,6 +131,35 @@ data_process tag_DMap range processor adaptTo adaptFrom = (data_file' $
 
 
 
+
+{-- process and pass data to gnuplot +=============================================================
+================================================================================================ --}
+
+data_processM :: DMap.Map String String -> [Int] ->
+                                [([(Dynamic, Dynamic)] -> [ (Processor_data, Processor_data) ])] ->
+
+                                (String -> [(Dynamic, Dynamic)] ) ->
+
+
+                                  IO ()
+data_processM  tag_DMap [] processors adaptTo =
+    (data_file' $ data_file tag_DMap) >>= \x -> iterate_all_data tag_DMap $
+                    map (toStringTable . stack_output . (apply_processors (processors)) . adaptTo) x
+
+
+data_processM tag_DMap range processors adaptTo = (data_file' $
+   data_file_range tag_DMap range) >>= \x -> iterate_all_data tag_DMap $
+                    map (toStringTable . stack_output . (apply_processors (processors)) . adaptTo) x
+
+
+--toStringTable $ stack_output $
+--                           apply_processors [(identity_i_dyn)] [(toDyn (1::Int), toDyn (2::Int))]
+--------------------------------------------------------
+
+
+
+
+
 {-- process data when context of data frame is important (Like when processing a time frame).
  ============= And then pass data to gnuplot ================================================== --}
 data_process_range_sensitive :: DMap.Map String String -> [Int] -> ([a] -> [a]) ->
@@ -162,6 +192,7 @@ get_demanded_processors arg = break_to_processors arg $ at_commas arg 0
         break_to_processors str [] = [str]
         break_to_processors str (i:rest) = (\(s,sr) -> s : (break_to_processors (tail sr) rest) )
                                                                                     $ splitAt i str
+
 --------------------------------------------------------------------------------------------------
 
 
@@ -175,9 +206,14 @@ routine::[String] -> IO ()
 routine args
   |is_for_test = justtest
   |is_for_bypass = data_bypass tag_DMap' range
-  |there_is_processing = execute_demanded_processorS $ get_demanded_processors
-         --  putStrLn $ show $ get_demanded_processors
-              (DMap.findWithDefault default_data_process argument_data_process tag_DMap')
+  |there_is_processing = data_processM tag_DMap' range
+                       (
+                       recognizeDemanded_processors $
+                       get_demanded_processors
+                       (DMap.findWithDefault default_data_process argument_data_process tag_DMap')
+                       )
+
+                       (stringToIntList_dyn)
   |otherwise = return () --putStr ""
    {-- |
        |
@@ -215,12 +251,28 @@ routine args
         step1 proc
             |identity_i_processor' proc = data_process tag_DMap' range identity_i stringToIntList
                                                                                 intListToString
-            |derivative_f_processor' proc = data_process tag_DMap' range derivative_f stringToFloatList
-                                                                                floatListToString
-            |derivative_i_processor' proc = data_process tag_DMap' range derivative_i stringToIntList
-                                                                                intListToString
+            |derivative_f_processor' proc = data_process tag_DMap' range derivative_f
+                                                                stringToFloatList floatListToString
+            |derivative_i_processor' proc = data_process tag_DMap' range derivative_i
+                                                                    stringToIntList intListToString
 
             |otherwise = return ()
+
+
+
+
+     recognizeDemanded_processors :: [String] ->
+                           [( [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)] )]
+     recognizeDemanded_processors proc = map ((\(Just x) -> x) . step1) proc
+       where
+        step1 :: String -> Maybe ( [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)] )
+        step1 proc
+            |identity_i_processor' proc = Just identity_i_dyn
+            |identity_f_processor' proc = Just identity_f_dyn
+            |derivative_f_processor' proc = Just derivative_f_dyn
+            |derivative_i_processor' proc = Just derivative_i_dyn
+
+            |otherwise = Nothing
 
 
      execute_demanded_processorS :: [String] -> IO ()
@@ -269,12 +321,33 @@ main = do
 
     getArgs >>= \args -> routine args
     --putStr ""
-    --test8
+    --test9
 
 
 
 
 
+
+test9 = do
+     --putStrLn $ show $ map (\(x, y) -> ((fromDyn x 0::Int), (fromDyn y 0::Int)) )  $ head $
+     --      apply_processors [(identity_i_dyn)] [(toDyn (1::Int), toDyn (2::Int))]
+
+     putStrLn ${-- show $ (\x-> map (\(Pd y _) -> y) x)--}toStringTable $ stack_output $
+                           apply_processors [(identity_i_dyn),
+                                             (identity_f_dyn),
+                                             (derivative_i_dyn),
+                                             (derivative_f_dyn)
+                                            ]                  [(toDyn (1::Int), toDyn (101::Int)),
+                                                                (toDyn (2::Int), toDyn (102::Int)),
+                                                                (toDyn (3::Int), toDyn (103::Int)),
+                                                                (toDyn (4::Int), toDyn (104::Int)),
+                                                                (toDyn (5::Int), toDyn (105::Int)),
+                                                                (toDyn (6::Int), toDyn (106::Int)),
+                                                                (toDyn (7::Int), toDyn (107::Int)),
+                                                                (toDyn (8::Int), toDyn (108::Int)),
+                                                                (toDyn (9::Int), toDyn (109::Int)),
+                                                                (toDyn (10::Int), toDyn (110::Int))
+                                                               ]
 
 
 

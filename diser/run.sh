@@ -6,11 +6,11 @@
 : << 'xxx'
 ./diser --gnuplot-file plot.gpi \
         --range-of-files 1..1000 \
-        --data-process identity_i,derivative_f \
+        --data-process identity_i,derivative_i \
         --data-file /media/sda2/sda2/pixels_to_signals/sda3/temp/new_Automatic_Traffic_Surveillance.avi/data_files/data \
         |gnuplot -persist \
-        |ffmpeg -f mjpeg -i pipe: -f avi -vcodec copy -y -s 1280x511 pipe: \
-        |mplayer -idx -
+        |ffmpeg -f mjpeg -i pipe: -f avi -vcodec copy -y -s 1280x511 .avi #pipe: \
+        #|mplayer -idx -
 xxx
 
 

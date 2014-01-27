@@ -2,11 +2,16 @@
 module Processors (
 
 identity_i,
+identity_i_dyn,
 identity_f,
+identity_f_dyn,
 derivative_i,
+derivative_i_dyn,
 derivative_f,
+derivative_f_dyn,
 
 stringToIntList,
+stringToIntList_dyn,
 intListToString,
 stringToFloatList,
 floatListToString,
@@ -14,11 +19,20 @@ floatListToString,
 stringToIntList_mn,
 stringToFloatList_mn,
 intListToString_2to3,
-floatListToString_2to3
+floatListToString_2to3,
+apply_processors,
+stack_output,
+toStringTable,
+Processor_data,
 
 ) where
 
 import Data.List
+import Data.Dynamic
+
+
+--
+data Processor_data = Pd Dynamic  (Dynamic -> String) --deriving (Show)
 
 
 eol_char = "\n"
@@ -33,7 +47,16 @@ eol_char = "\n"
 identity_i :: [(Int, Int)] -> [(Int, Int)]
 identity_i  row = row
 ---------------------------------
-
+{--    |
+       |
+       |
+       |
+       V  --}
+identity_i_dyn :: [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)]
+identity_i_dyn  row = map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0::Int) ),
+                                      Pd (toDyn y) (show . \z -> fromDyn z (0::Int) ) )) $
+                      identity_i $
+                      map (\(x, y) -> ((fromDyn x 0)  , (fromDyn y 0) )) row
 
 
 
@@ -42,7 +65,16 @@ identity_i  row = row
 identity_f :: [(Float, Float)] -> [(Float, Float)]
 identity_f  row = row
 ---------------------------------
-
+{--    |
+       |
+       |
+       |
+       V  --}
+identity_f_dyn :: [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)]
+identity_f_dyn  row = map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0::Float)),
+                                      Pd (toDyn y) (show . \z -> fromDyn z (0::Float)) )) $
+                      identity_f $
+                      map (\(x, y) -> ((fromDyn x 0)::Float  , (fromDyn y (0::Float)) )) row
 
 
 
@@ -52,23 +84,45 @@ identity_f  row = row
 
 derivative_i :: [(Int, Int)] -> [(Int, Int)]
 derivative_i  [] = []
-derivative_i  row@(prev@(x_prev, y_prev):x_rest) = (x_prev, 0):(step1 row)
+derivative_i  row@((x_prev, _):_) = (x_prev, 0):(step1 row)
      where
         step1 :: [(Int, Int)] -> [(Int, Int)]
         step1  [] = []
-        step1 (prev@(x_prev, y_prev):x_rest) = ((\(x, y) -> (x , y-y_prev) ) $ head x_rest):
-             (step1 $ tail x_rest)
+        step1 (_:[]) = []
+        step1 ((x_prev, y_prev):rest) = ((\(x, y) -> (x , y-y_prev) ) $ head rest):
+             (step1 rest)
+
+
+
+
+
+derivative_i_dyn :: [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)]
+derivative_i_dyn  row = map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0::Int) ),
+                                      Pd (toDyn y) (show . \z -> fromDyn z (0::Int) ) )) $
+                      derivative_i $
+                      map (\(x, y) -> ((fromDyn x 0)::Int  , (fromDyn y 0)::Int )) row
 
 
 
 derivative_f :: [(Float, Float)] -> [(Float, Float)]
 derivative_f  [] = []
-derivative_f  row@(prev@(x_prev, y_prev):x_rest) = (x_prev, 0):(step1 row)
+derivative_f  row@((x_prev, _):_) = (x_prev, 0):(step1 row)
      where
         step1 :: [(Float, Float)] -> [(Float, Float)]
         step1  [] = []
-        step1 (prev@(x_prev, y_prev):x_rest) = ((\(x, y) -> (x_prev + ( (abs $ x - x_prev)/2),
-                                                  y-y_prev) ) $ head x_rest):(step1 $ tail x_rest)
+        step1 (_:[]) = []
+        step1 ((x_prev, y_prev):rest) = ((\(x, y) -> (x_prev + ( (abs $ x - x_prev)/2),
+                                                  y-y_prev) ) $ head rest):(step1 $ rest)
+
+
+
+derivative_f_dyn :: [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)]
+derivative_f_dyn  row = map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0::Float) ),
+                                      Pd (toDyn y) (show . \z -> fromDyn z (0::Float) ) )) $
+                      derivative_f $
+                      map (\(x, y) -> ((fromDyn x 0)::Float  , (fromDyn y 0)::Float )) row
+
+
 ---------------------------------
 
 
@@ -81,12 +135,54 @@ derivative_f  row@(prev@(x_prev, y_prev):x_rest) = (x_prev, 0):(step1 row)
 
 
 
-apply_processors :: [([a] -> [a])] -> [a] -> [[a]]
+
+
+
+
+
+
+
+apply_processors :: [( [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)] )] ->
+                                       [(Dynamic, Dynamic)] -> [[ (Processor_data, Processor_data) ]]
 apply_processors [] _ = []
 apply_processors (processor:rest) input = (processor input):(apply_processors rest input)
 
 
-stack_output :: [    ( ([a] -> ([String], [String])),       [a])     ] -> String
+
+
+
+
+stack_output :: [[ (Processor_data, Processor_data) ]] -> [[Processor_data]]
+stack_output [] = []
+stack_output (data_ : rest ) = (\(x, y) -> x:y:(step1 rest) ) $ unzip data_
+    where
+    step1 :: [[ (Processor_data, Processor_data) ]] -> [[Processor_data]]
+    step1 [] = []
+    step1 (data_ : rest ) = (\(x, y) -> y:(step1 rest)) $ unzip data_
+
+
+
+
+
+toStringTable :: [[Processor_data]] -> String
+toStringTable data_@(left: rest) = unlines $ step_join
+                                (map (\(Pd d f) -> f d) left)
+                                $ step2 rest
+   where
+      step_join :: [String] -> [String] -> [String]
+      step_join []          (y:resty) = ("" ++ " " ++   y) :(step_join [] resty)
+      step_join (x:restx)   []        = (x  ++ " " ++  "") :(step_join restx [])
+      step_join []          []        = []
+      step_join (x:restx)   (y:resty) = (x  ++ " " ++   y) :(step_join restx resty)
+
+      step2 :: [[Processor_data]] -> [String]
+      step2 [] = []
+      step2 (left : rest) = step_join (map (\(Pd d f) -> f d) left) $ step2 rest
+
+
+
+
+{--stack_output :: [    ( ([a] -> ([String], [String])),       [a])     ] -> String
 stack_output (data_plus_adapter@( (adapter, data_) ): rest ) =
    unlines  (step2 rest $ step_join $ adapter data_)
    where
@@ -100,11 +196,11 @@ stack_output (data_plus_adapter@( (adapter, data_) ): rest ) =
       step2 (data_plus_adapter@( (adapter, data_) ): rest ) already_done =
             step2 rest $ (\(_, y) -> step_join (already_done, y) ) $ adapter data_
 
+--}
 
 
 
-
-------------------read columns 1,2 of (1..inf)--------------------------------------------------------
+------------------read columns 1,2 of (1..inf)------------------------------------------------------
 {-- ================================================================================================
 ================================================================================================ --}
 stringToIntList :: String -> [(Int, Int)]
@@ -113,6 +209,17 @@ stringToIntList str =  map step1 $ lines str
   step1 :: String -> (Int, Int)
   step1 str = (\x -> (read $ head x , read $ head $ tail x) ) $ words str
 ------------------------------
+
+
+stringToIntList_dyn :: String -> [(Dynamic, Dynamic)]
+stringToIntList_dyn str =  map step1 $ lines str
+  where
+  step1 :: String -> (Dynamic, Dynamic)
+  step1 str = (\x -> (toDyn ((read $ head x)::Int) ,toDyn ((read $ head $ tail x)::Int) ) ) $
+                                                                                          words str
+
+
+
 
 {-- ================================================================================================
 ================================================================================================ --}
