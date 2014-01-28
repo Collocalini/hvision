@@ -9,6 +9,7 @@ argument_range_of_files ,
 argument_test,
 argument_data_bypass_mode ,
 argument_data_process,
+argument_use_columns,
 
 default_data_file,
 default_single_data_file,
@@ -18,7 +19,7 @@ default_range_of_files,
 default_test,
 default_data_bypass_mode,
 default_data_process,
-
+default_use_columns,
 
 identity_i_processor',
 identity_f_processor',
@@ -47,15 +48,17 @@ argument_range_of_files = "range-of-files" -- if range [5..10] then read data5, 
 argument_test = "test"
 argument_data_bypass_mode = "data-bypass-mode"
 argument_data_process = "data-process"
+argument_use_columns = "use-columns"
 
 default_data_file = "data"
 default_single_data_file = "false"
 default_multipage_data_file = "-"
 default_gnuplot_file = "plot.gpi"
-default_range_of_files = "1..1000" -- if range [5..10] then read data5, data6, ... data10
+default_range_of_files = "" -- if range [5..10] then read data5, data6, ... data10
 default_test = "false"
 default_data_bypass_mode = "false"
 default_data_process = "-"
+default_use_columns = "1:2"
 
 
 
@@ -96,7 +99,8 @@ options =  [
             argument_gnuplot_file ,
             argument_range_of_files,
             argument_multipage_data_file,
-            argument_data_process
+            argument_data_process,
+            argument_use_columns
            ]
 
 {-- ================================================================================================
@@ -111,7 +115,8 @@ tag_DMap [] = DMap.fromList [
         (argument_data_bypass_mode,    default_data_bypass_mode),
         (argument_single_data_file,    default_single_data_file),
         (argument_multipage_data_file, default_multipage_data_file),
-        (argument_data_process ,       default_data_process)
+        (argument_data_process ,       default_data_process),
+        (argument_use_columns,         default_use_columns)
    ]----]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]
 
 tag_DMap lst = DMap.union (DMap.fromList $ map (\(Just x) -> x) $ list_arguments lst) $

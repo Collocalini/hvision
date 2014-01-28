@@ -45,8 +45,8 @@ data_file tag_DMap = [read_file_if_exists (DMap.findWithDefault "Not found" ( ar
                                                                                          tag_DMap)]
 data_file_range :: DMap.Map String String -> [Int] -> [IO String]
 data_file_range _ [] = []
-data_file_range tag_DMap range = map read_file_if_exists (  map ((DMap.findWithDefault "Not found"
-           ( argument_data_file) $ tag_DMap) ++) $ map show range )
+data_file_range tag_DMap range = map read_file_if_exists $ map ((DMap.findWithDefault "Not found"
+           ( argument_data_file) $ tag_DMap) ++) $ map show range
 
 get_range :: String -> [Int]
 get_range [] = []
@@ -69,8 +69,24 @@ iterate_all_data' tag_DMap x  = iterate_all_data tag_DMap x
 
 
 
+weed_data_from_input :: Int -> [String] -> [String]
+weed_data_from_input n str = concat $ map ((step1 []).(drop n).lines) str
+    where
+    step1 :: String -> [String]-> [String]
+    step1 iteration []  = [iteration]
+    step1 iteration (str:[])
+       |((filter (' ' /=) str) == "EOF") = [iteration]
+--       |((filter (' ' /=) str) == "") = [iteration]
+       |otherwise = [step2 iteration str]
 
+    step1 iteration (str:rest)
+       |((filter (' ' /=) str) == "EOF") = iteration : step1 [] (drop n rest)
+--       |((filter (' ' /=) str) == "") = iteration : step1 [] rest
+       |otherwise = step1 (step2 iteration str) rest
 
+    step2 :: String -> String -> String
+    step2 [] str1 = str1
+    step2 str str1 = str++eol_char++str1
 
 
 
@@ -137,23 +153,36 @@ data_process tag_DMap range processor adaptTo adaptFrom = (data_file' $
 
 data_processM :: DMap.Map String String -> [Int] ->
                                 [([(Dynamic, Dynamic)] -> [ (Processor_data, Processor_data) ])] ->
-
                                 (String -> [(Dynamic, Dynamic)] ) ->
-
-
-                                  IO ()
+                                IO ()
 data_processM  tag_DMap [] processors adaptTo =
     (data_file' $ data_file tag_DMap) >>= \x -> iterate_all_data tag_DMap $
                     map (toStringTable . stack_output . (apply_processors (processors)) . adaptTo) x
 
-
 data_processM tag_DMap range processors adaptTo = (data_file' $
    data_file_range tag_DMap range) >>= \x -> iterate_all_data tag_DMap $
                     map (toStringTable . stack_output . (apply_processors (processors)) . adaptTo) x
+--------------------------------------------------------
 
 
---toStringTable $ stack_output $
---                           apply_processors [(identity_i_dyn)] [(toDyn (1::Int), toDyn (2::Int))]
+
+
+
+{-- process and pass data to gnuplot +=============================================================
+================================================================================================ --}
+
+data_processMultipage :: DMap.Map String String -> [Int] ->
+                                [([(Dynamic, Dynamic)] -> [ (Processor_data, Processor_data) ])] ->
+                                (String -> [(Dynamic, Dynamic)] ) ->
+                                ([String] -> [String]) ->
+                                IO ()
+data_processMultipage  tag_DMap [] processors adaptTo prepare_input =
+    (data_file' $ data_file tag_DMap) >>= \x -> iterate_all_data tag_DMap $
+         map (toStringTable . stack_output . (apply_processors (processors)) . adaptTo) $ prepare_input x
+
+data_processMultipage tag_DMap range processors adaptTo prepare_input = (data_file' $
+   data_file_range tag_DMap range) >>= \x -> iterate_all_data tag_DMap $
+         map (toStringTable . stack_output . (apply_processors (processors)) . adaptTo) $ prepare_input x
 --------------------------------------------------------
 
 
@@ -202,19 +231,35 @@ get_demanded_processors arg = break_to_processors arg $ at_commas arg 0
 
 {-- ================================================================================================
 ================================================================================================ --}
+get_demanded_columns :: String -> (Int, Int)
+get_demanded_columns arg = (\x -> (read $ head x, read $ last x) ) $ break_to_columns arg $
+                                                                               at_semicolons arg 0
+    where
+        at_semicolons :: String -> Int -> [Int]
+        at_semicolons [] _ = []
+        at_semicolons (x:rest) i
+           |x == ':' = i:at_semicolons rest (i+1)
+           |otherwise = at_semicolons rest (i+1)
+
+        break_to_columns :: String -> [Int] -> [String]
+        break_to_columns str [] = [str]
+        break_to_columns str (i:rest) = (\(s,sr) -> s : (break_to_columns (tail sr) rest) )
+                                                                                    $ splitAt i str
+
+--------------------------------------------------------------------------------------------------
+
+
+
+
+
+{-- ================================================================================================
+================================================================================================ --}
 routine::[String] -> IO ()
 routine args
   |is_for_test = justtest
   |is_for_bypass = data_bypass tag_DMap' range
-  |there_is_processing = data_processM tag_DMap' range
-                       (
-                       recognizeDemanded_processors $
-                       get_demanded_processors
-                       (DMap.findWithDefault default_data_process argument_data_process tag_DMap')
-                       )
-
-                       (stringToIntList_dyn)
-  |otherwise = return () --putStr ""
+  |there_is_processing = do_processing
+  |otherwise = return ()
    {-- |
        |
        |
@@ -227,6 +272,13 @@ routine args
      is_for_test :: Bool
      is_for_test
         |"true" == (DMap.findWithDefault "Not found" argument_test $ tag_DMap') = True
+        |otherwise = False
+
+
+     is_multipage :: Bool
+     is_multipage
+        |default_multipage_data_file /= (DMap.findWithDefault default_multipage_data_file
+                                                 argument_multipage_data_file $ tag_DMap') = True
         |otherwise = False
 
      is_for_bypass :: Bool
@@ -242,23 +294,30 @@ routine args
         |otherwise = False
 
 
-     execute_demanded_processor :: String -> IO ()
-     execute_demanded_processor proc = do
-        --putStrLn proc
-        step1 proc
-        where
-        step1 :: String -> IO ()
-        step1 proc
-            |identity_i_processor' proc = data_process tag_DMap' range identity_i stringToIntList
-                                                                                intListToString
-            |derivative_f_processor' proc = data_process tag_DMap' range derivative_f
-                                                                stringToFloatList floatListToString
-            |derivative_i_processor' proc = data_process tag_DMap' range derivative_i
-                                                                    stringToIntList intListToString
 
-            |otherwise = return ()
+     do_processing
+        |is_multipage = data_processMultipage tag_DMap' range
+                       (
+                       recognizeDemanded_processors $
+                       get_demanded_processors
+                       (DMap.findWithDefault default_data_process argument_data_process tag_DMap')
+                       )
+                       (stringToFloatList_mn_dyn column_m column_n)
+                       (weed_data_from_input  $ read
+                                                   (DMap.findWithDefault default_multipage_data_file
+                                                           argument_multipage_data_file $ tag_DMap')
+                       )
 
+        |otherwise = data_processM tag_DMap' range
+                       (
+                       recognizeDemanded_processors $
+                       get_demanded_processors
+                       (DMap.findWithDefault default_data_process argument_data_process tag_DMap')
+                       )
 
+                       --(stringToIntList_dyn)
+                       --(stringToIntList_mn_dyn 1 2)
+                       (stringToFloatList_mn_dyn column_m column_n)
 
 
      recognizeDemanded_processors :: [String] ->
@@ -275,45 +334,21 @@ routine args
             |otherwise = Nothing
 
 
-     execute_demanded_processorS :: [String] -> IO ()
-     execute_demanded_processorS [] = return ()
-     execute_demanded_processorS (str:rest) = do
-                                                 --putStrLn str
 
-                                                 execute_demanded_processor str
-                                                 execute_demanded_processorS rest
+
 -----end of peculier section
 
 
-{--     identity_processor :: Bool
-     identity_processor
-        |"identity_i" == (DMap.findWithDefault "Not found" argument_data_process $ tag_DMap') = True
-        |otherwise = False --}
+     column_m = (\(x, y) -> x) $ get_demanded_columns
+                       (DMap.findWithDefault default_use_columns argument_use_columns tag_DMap')
 
-
-
-{--     derivative_f_processor :: Bool
-     derivative_f_processor
-        |"derivative_f" == (DMap.findWithDefault "Not found" argument_data_process $ tag_DMap') =
-                                                                                               True
-        |otherwise = False  --}
-
-
-
-
-
-{--     derivative_i_processor :: Bool
-     derivative_i_processor
-        |"derivative_i" == (DMap.findWithDefault "Not found" argument_data_process $ tag_DMap') =
-                                                                                               True
-        |otherwise = False  ---}
-
-
-
+     column_n = (\(x, y) -> y) $ get_demanded_columns
+                       (DMap.findWithDefault default_use_columns argument_use_columns tag_DMap')
 
      tag_DMap' = tag_DMap args
      range = get_range (DMap.findWithDefault "Not found" argument_range_of_files $ tag_DMap')
--------------------------------------------------------------------------
+
+----------------------------------------------------------------------------------------------------
 
 
 
@@ -321,8 +356,34 @@ main = do
 
     getArgs >>= \args -> routine args
     --putStr ""
-    --test9
+    --test11
 
+
+
+test11 = do
+   getArgs >>=
+     (\str -> -- $ unwords str
+
+
+     (data_file' $ data_file $ tag_DMap str) >>= \x -> iterate_all_data (tag_DMap str) $
+        {-- map (toStringTable . stack_output . (apply_processors ([(identity_f_dyn)])) .
+                                           stringToFloatList_mn_dyn 1 2) $--} weed_data_from_input 3 x
+     )
+
+
+     --(data_file' $ data_file (tag_DMap str)) >>=
+     --                       \x -> putStrLn $ show $ weed_data_from_input 3  $
+     --                                                              stringToFloatList_mn_dyn 1 2 x)
+
+
+
+
+test10  = do
+    putStr $ show $ weed_data_from_input 3
+      [" 1 \n 2 \n 3 \n 4 \n x \n x \n EOF \n 5 \n 6 \n 7 \n 8 \n EOF \n 9 \n 10 \n 11 \n 12 \n 13 \n 14 \n",
+       " 1 \n 2 \n 3 \n 4 \n x \n x \n EOF \n 5 \n 6 \n 7 \n 8 \n EOF \n9 \n 10 \n 11 \n 12 \n 13 \n 14 \n",
+       " 1 \n 2 \n 3 \n 4 \n x \n x \n EOF \n 5 \n 6 \n 7 \n 8 \n EOF \n9 \n 10 \n 11 \n 12 \n 13 \n 14 \n"
+      ]
 
 
 
