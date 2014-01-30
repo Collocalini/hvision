@@ -27,6 +27,7 @@ import Text.ParserCombinators.Parsec
 --import Text.ParserCombinators.Parsec.Char
 --import System.Process
 import Control.Monad
+import Pipes
 
 ---from this project
 import Processors
@@ -34,8 +35,7 @@ import Global
 ---end of imports from this project
 
 
-eol = try (string $ eol_char) <|>
-          (string $ eol_char)
+
 
 gnuplot_file :: DMap.Map String String -> IO String
 gnuplot_file tag_DMap = read_file_if_exists (DMap.findWithDefault "Not found"
@@ -352,11 +352,37 @@ routine args
 
 
 
+
+
+
+stdinLn :: Producer String IO ()
+stdinLn = do
+     eof <- lift isEOF        -- 'lift' an 'IO' action from the base monad
+     unless eof $ do
+         str <- lift getLine
+         yield str            -- 'yield' the 'String'
+         stdinLn              -- Loop
+
+
+
+
+
+
 main = do
 
     getArgs >>= \args -> routine args
     --putStr ""
     --test11
+
+
+
+
+
+test12 = do ---return ()
+   runEffect $ for stdinLn (lift . putStrLn . ("-----" ++))
+
+
+
 
 
 
@@ -367,7 +393,7 @@ test11 = do
 
      (data_file' $ data_file $ tag_DMap str) >>= \x -> iterate_all_data (tag_DMap str) $
         {-- map (toStringTable . stack_output . (apply_processors ([(identity_f_dyn)])) .
-                                           stringToFloatList_mn_dyn 1 2) $--} weed_data_from_input 3 x
+                                       stringToFloatList_mn_dyn 1 2) $--} weed_data_from_input 3 x
      )
 
 
@@ -380,9 +406,12 @@ test11 = do
 
 test10  = do
     putStr $ show $ weed_data_from_input 3
-      [" 1 \n 2 \n 3 \n 4 \n x \n x \n EOF \n 5 \n 6 \n 7 \n 8 \n EOF \n 9 \n 10 \n 11 \n 12 \n 13 \n 14 \n",
-       " 1 \n 2 \n 3 \n 4 \n x \n x \n EOF \n 5 \n 6 \n 7 \n 8 \n EOF \n9 \n 10 \n 11 \n 12 \n 13 \n 14 \n",
-       " 1 \n 2 \n 3 \n 4 \n x \n x \n EOF \n 5 \n 6 \n 7 \n 8 \n EOF \n9 \n 10 \n 11 \n 12 \n 13 \n 14 \n"
+      [" 1 \n 2 \n 3 \n 4 \n x \n x \n EOF \n 5 \n 6 \n 7 \n 8 \n EOF \n 9 \n 10 \n" ++
+        " 11 \n 12 \n 13 \n 14 \n",
+       " 1 \n 2 \n 3 \n 4 \n x \n x \n EOF \n 5 \n 6 \n 7 \n 8 \n EOF \n9 \n 10 \n" ++
+        " 11 \n 12 \n 13 \n 14 \n",
+       " 1 \n 2 \n 3 \n 4 \n x \n x \n EOF \n 5 \n 6 \n 7 \n 8 \n EOF \n9 \n 10 \n" ++
+        " 11 \n 12 \n 13 \n 14 \n"
       ]
 
 

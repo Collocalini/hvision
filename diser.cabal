@@ -6,7 +6,7 @@ license: PublicDomain
 license-file: ""
 copyright:
 maintainer:
-build-depends: base -any, containers -any, parsec -any
+build-depends: base -any, containers -any, parsec -any, pipes -any
 stability:
 homepage:
 package-url:
