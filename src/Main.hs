@@ -28,6 +28,7 @@ import Text.ParserCombinators.Parsec
 --import System.Process
 import Control.Monad
 import Pipes
+import qualified Pipes.Prelude as P
 
 ---from this project
 import Processors
@@ -189,6 +190,23 @@ data_processMultipage tag_DMap range processors adaptTo prepare_input = (data_fi
 
 
 
+{-- process and pass data to gnuplot +=============================================================
+================================================================================================ --}
+
+data_processMultipage_fromStdin :: DMap.Map String String -> [Int] ->
+                                [([(Dynamic, Dynamic)] -> [ (Processor_data, Processor_data) ])] ->
+                                (String -> [(Dynamic, Dynamic)] ) ->
+                                ([String] -> [String]) ->
+                                Consumer [String] IO ()
+data_processMultipage_fromStdin  tag_DMap [] processors adaptTo prepare_input = forever $
+    (await) >>= \x -> lift $ iterate_all_data tag_DMap $
+         map (toStringTable . stack_output . (apply_processors (processors)) . adaptTo) $ prepare_input x
+--------------------------------------------------------
+
+
+
+
+
 {-- process data when context of data frame is important (Like when processing a time frame).
  ============= And then pass data to gnuplot ================================================== --}
 data_process_range_sensitive :: DMap.Map String String -> [Int] -> ([a] -> [a]) ->
@@ -258,7 +276,9 @@ routine::[String] -> IO ()
 routine args
   |is_for_test = justtest
   |is_for_bypass = data_bypass tag_DMap' range
-  |there_is_processing = do_processing
+  |there_is_processing =
+  --runEffect $ P.stdinLn >-> (wait_for_piece_of_data []) >->  P.stdoutLn
+     do_processing
   |otherwise = return ()
    {-- |
        |
@@ -296,7 +316,20 @@ routine args
 
 
      do_processing
-        |is_multipage = data_processMultipage tag_DMap' range
+        {--|is_multipage = data_processMultipage tag_DMap' range
+                       (
+                       recognizeDemanded_processors $
+                       get_demanded_processors
+                       (DMap.findWithDefault default_data_process argument_data_process tag_DMap')
+                       )
+                       (stringToFloatList_mn_dyn column_m column_n)
+                       (weed_data_from_input  $ read
+                                                   (DMap.findWithDefault default_multipage_data_file
+                                                           argument_multipage_data_file $ tag_DMap')
+                       )
+--}
+        |is_multipage = runEffect $ P.stdinLn >-> (wait_for_piece_of_data []) >->
+                     data_processMultipage_fromStdin tag_DMap' range
                        (
                        recognizeDemanded_processors $
                        get_demanded_processors
@@ -355,14 +388,36 @@ routine args
 
 
 
-stdinLn :: Producer String IO ()
+{--stdinLn :: Producer String IO ()
 stdinLn = do
      eof <- lift isEOF        -- 'lift' an 'IO' action from the base monad
      unless eof $ do
          str <- lift getLine
          yield str            -- 'yield' the 'String'
          stdinLn              -- Loop
+         --}
 
+--input :: Producer String IO ()
+--input = P.stdinLn >-> P.takeWhile (/= "EOF")
+
+wait_for_piece_of_data :: String -> Pipe String ( [String]) IO ()--ListT IO String
+wait_for_piece_of_data prev = do
+   --str <- Select $ P.stdinLn >-> P.takeWhile (/= "EOF")
+   --case str of
+   --   "EOF" -> wait_for_piece_of_data
+   --   otherwise -> return $ str
+   --return $ str ++ str1
+   --wait_for_piece_of_data
+   str <- await
+   case str of
+      "EOF" -> do yield {--$ return $ unlines $ weed_data_from_input 3 --}[prev++str++"\n"]
+                  wait_for_piece_of_data []
+      otherwise -> wait_for_piece_of_data (prev++str++"\n")
+   --return $ str
+   --return [str]
+  -- where
+  --   step1 :: (Monad m) => String -> Consumer String m String
+  --   step1
 
 
 
@@ -372,17 +427,19 @@ main = do
 
     getArgs >>= \args -> routine args
     --putStr ""
-    --test11
+    --test12
 
 
 
 
 
-test12 = do ---return ()
-   runEffect $ for stdinLn (lift . putStrLn . ("-----" ++))
 
-
-
+--test12 = do return ()
+   --runEffect $ P.stdinLn >-> (wait_for_piece_of_data []) (>>=) (\x -> (x >->  P.stdoutLn))
+   --return ()
+   --weed_data_from_input 3
+   --runEffect $ for stdinLn (lift . putStrLn . ("-----" ++))
+     --runEffect $ P.stdinLn >-> wait_for_piece_of_data
 
 
 
