@@ -17,7 +17,7 @@ xxx
 cat xxx |./diser --gnuplot-file plot.gpi \
         --data-process identity_f,derivative_f \
         --use-columns 1:2 \
-        --multipage-data-file 3 \
+        --data-from-stdin 3 \
         |gnuplot -persist \
         |ffmpeg -f mjpeg -i pipe: -f avi -vcodec copy -y -s 1280x511 .avi #pipe: \
         #|mplayer -idx -

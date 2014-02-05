@@ -4,6 +4,7 @@ module Global (
 argument_data_file ,
 argument_single_data_file,
 argument_multipage_data_file ,
+argument_data_from_stdin,
 argument_gnuplot_file ,
 argument_range_of_files ,
 argument_test,
@@ -14,6 +15,7 @@ argument_use_columns,
 default_data_file,
 default_single_data_file,
 default_multipage_data_file,
+default_data_from_stdin,
 default_gnuplot_file,
 default_range_of_files,
 default_test,
@@ -43,6 +45,7 @@ import qualified Data.Map as DMap
 argument_data_file = "data-file"
 argument_single_data_file = "single-data-file"
 argument_multipage_data_file = "multipage-data-file"
+argument_data_from_stdin = "data-from-stdin"
 argument_gnuplot_file = "gnuplot-file"
 argument_range_of_files = "range-of-files" -- if range [5..10] then read data5, data6, ... data10
 argument_test = "test"
@@ -59,6 +62,7 @@ default_test = "false"
 default_data_bypass_mode = "false"
 default_data_process = "-"
 default_use_columns = "1:2"
+default_data_from_stdin = "-"
 
 
 
@@ -100,7 +104,8 @@ options =  [
             argument_range_of_files,
             argument_multipage_data_file,
             argument_data_process,
-            argument_use_columns
+            argument_use_columns,
+            argument_data_from_stdin
            ]
 
 {-- ================================================================================================
@@ -116,7 +121,8 @@ tag_DMap [] = DMap.fromList [
         (argument_single_data_file,    default_single_data_file),
         (argument_multipage_data_file, default_multipage_data_file),
         (argument_data_process ,       default_data_process),
-        (argument_use_columns,         default_use_columns)
+        (argument_use_columns,         default_use_columns),
+        (argument_data_from_stdin,     default_data_from_stdin)
    ]----]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]
 
 tag_DMap lst = DMap.union (DMap.fromList $ map (\(Just x) -> x) $ list_arguments lst) $
