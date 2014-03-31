@@ -131,23 +131,6 @@ data_bypass tag_DMap range = (data_file' $ data_file_range tag_DMap range) >>= \
 
 
 
-{-- process and pass data to gnuplot +=============================================================
-============DEPRECATED=DEPRECATED=DEPRECATED=DEPRECATED===========================================
-data_process :: DMap.Map String String -> [Int] -> ([a] -> [a]) ->
-                                              (String -> [a] ) -> ([a] -> String) -> IO ()
-data_process  tag_DMap [] processor adaptTo adaptFrom = (data_file' $ data_file tag_DMap) >>= \x ->
-                                    iterate_all_data tag_DMap $ map (adaptFrom . processor . adaptTo) x
-
-
-data_process tag_DMap range processor adaptTo adaptFrom = (data_file' $
-   data_file_range tag_DMap range) >>= \x ->
-                                    iterate_all_data tag_DMap $ map (adaptFrom . processor . adaptTo) x
-
-----------------------------------------------------------}
-
-
-
-
 {-- common steps in data_processM,
                     data_processMultipage,
                     data_processMultipage_fromStdin  functions
@@ -378,6 +361,7 @@ routine args
             |identity_f_processor' proc = Just identity_f_dyn
             |derivative_f_processor' proc = Just derivative_f_dyn
             |derivative_i_processor' proc = Just derivative_i_dyn
+            |distance_between_extremums_f_processor' proc = Just distance_between_extremums_f_dyn
 
             |otherwise = Nothing
 
@@ -415,3 +399,8 @@ main = do
     getArgs >>= \args -> routine args
     --putStr ""
     --test12
+
+
+
+--test1 = do
+   --distance_between_extremums_f [(0.0, 1.0):(0.0, 2.0)] --100.0,0.0,0.0,100.0, 0.0,100.0, 0.0]

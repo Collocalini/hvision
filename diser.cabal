@@ -38,7 +38,7 @@ includes:
 install-includes:
 include-dirs:
 hs-source-dirs: src
-other-modules: Processors Global
+other-modules: Processors AdHoc Global
 ghc-prof-options:
 ghc-shared-options:
 ghc-options:
