@@ -28,6 +28,7 @@ identity_f_processor',
 derivative_f_processor',
 derivative_i_processor',
 distance_between_extremums_f_processor',
+extremums_f_processor',
 
 flags ,
 
@@ -96,6 +97,11 @@ derivative_i_processor' str
 distance_between_extremums_f_processor' :: String -> Bool
 distance_between_extremums_f_processor' str
    |"distance_between_extremums_f" == str = True
+   |otherwise = False
+
+extremums_f_processor' :: String -> Bool
+extremums_f_processor' str
+   |"extremums_f" == str = True
    |otherwise = False
 
 

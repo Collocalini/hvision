@@ -1,7 +1,7 @@
 Version of session file format:
                1
 Time of storage:
-               "Tue Apr  1 17:02:03 GET 2014"
+               "Wed Apr  2 16:48:46 GET 2014"
 Layout:        VerticalP (VerticalP (HorizontalP (TerminalP {paneGroups = fromList [], paneTabs = Just TopP, currentPage = 0, detachedId = Nothing, detachedSize = Nothing}) (TerminalP {paneGroups = fromList [], paneTabs = Just TopP, currentPage = 0, detachedId = Nothing, detachedSize = Nothing}) 160) (TerminalP {paneGroups = fromList [], paneTabs = Just TopP, currentPage = 3, detachedId = Nothing, detachedSize = Nothing}) 488) (HorizontalP (TerminalP {paneGroups = fromList [], paneTabs = Just TopP, currentPage = -1, detachedId = Nothing, detachedSize = Nothing}) (TerminalP {paneGroups = fromList [], paneTabs = Just TopP, currentPage = -1, detachedId = Nothing, detachedSize = Nothing}) 130) 1914
 Population:    [(Just (BufferSt (BufferState "/home/hokum/Documents/haskell/diser/src/AdHoc.hs" 0)),[SplitP LeftP,SplitP RightP]),(Just (ErrorsSt ErrorsState),[SplitP LeftP,SplitP LeftP,SplitP TopP]),(Just (BufferSt (BufferState "/home/hokum/Documents/haskell/diser/src/Global.hs" 2195)),[SplitP LeftP,SplitP RightP]),(Just (LogSt LogState),[SplitP LeftP,SplitP LeftP,SplitP BottomP]),(Just (BufferSt (BufferState "/home/hokum/Documents/haskell/diser/src/Main.hs" 15626)),[SplitP LeftP,SplitP RightP]),(Just (BufferSt (BufferState "/home/hokum/Documents/haskell/diser/src/Processors.hs" 6432)),[SplitP LeftP,SplitP RightP]),(Just (WorkspaceSt WorkspaceState),[SplitP LeftP,SplitP LeftP,SplitP BottomP])]
 Window size:   (1920,1049)

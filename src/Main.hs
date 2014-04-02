@@ -220,7 +220,7 @@ data_process_range_sensitive tag_DMap range processor adaptTo adaptFrom = (data_
 
 
 {-- ================================================================================================
-================================================================================================ --}
+================================================================================================
 get_demanded_processors :: String -> [String]
 get_demanded_processors arg = break_to_processors arg $ at_commas arg 0
     where
@@ -236,7 +236,20 @@ get_demanded_processors arg = break_to_processors arg $ at_commas arg 0
                                                                                     $ splitAt i str
 
 --------------------------------------------------------------------------------------------------
+--}
 
+
+
+{-- ================================================================================================
+================================================================================================ --}
+get_demanded_processors :: String -> [String]
+get_demanded_processors arg = words $ map commas2spaces arg
+   where
+    commas2spaces :: Char -> Char
+    commas2spaces c
+       |c == ',' = ' '
+       |otherwise = c
+--------------------------------------------------------------------------------------------------
 
 
 
@@ -353,17 +366,35 @@ routine args
 
      recognizeDemanded_processors :: [String] ->
                            [( [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)] )]
-     recognizeDemanded_processors proc = map ((\(Just x) -> x) . step1) proc
+     recognizeDemanded_processors [] = []
+     recognizeDemanded_processors proc = step2 proc
+                                         --map ((\(Just x) -> x) . step1) proc
        where
+        {--
         step1 :: String -> Maybe ( [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)] )
+        step1 [] = Nothing
         step1 proc
             |identity_i_processor' proc = Just identity_i_dyn
             |identity_f_processor' proc = Just identity_f_dyn
             |derivative_f_processor' proc = Just derivative_f_dyn
             |derivative_i_processor' proc = Just derivative_i_dyn
             |distance_between_extremums_f_processor' proc = Just distance_between_extremums_f_dyn
+            |extremums_f_processor' proc = Just extremums_f_dyn
 
             |otherwise = Nothing
+            --}
+
+        step2 :: [String] -> [( [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)] )]
+        step2 [] = []
+        step2 (proc:rest)
+            |identity_i_processor' proc = identity_i_dyn:(step2 rest)
+            |identity_f_processor' proc = identity_f_dyn:(step2 rest)
+            |derivative_f_processor' proc = derivative_f_dyn:(step2 rest)
+            |derivative_i_processor' proc = derivative_i_dyn:(step2 rest)
+            |distance_between_extremums_f_processor' proc = distance_between_extremums_f_dyn:
+                                                                                        (step2 rest)
+            |extremums_f_processor' proc = extremums_f_dyn:(step2 rest)
+            |otherwise = step2 rest
 
 
 

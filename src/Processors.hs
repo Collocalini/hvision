@@ -11,6 +11,8 @@ derivative_f,
 derivative_f_dyn,
 distance_between_extremums_f,
 distance_between_extremums_f_dyn,
+extremums_f,
+extremums_f_dyn,
 
 stringToIntList,
 stringToIntList_dyn,
@@ -144,16 +146,15 @@ because stack_outpu downstream rips X argument off.
 ================================================================================================ --}
 distance_between_extremums_f :: [(Float, Float)] -> [(Float, Float)]
 distance_between_extremums_f  [] = []
-distance_between_extremums_f  row@((x_prev, _):_) = --step2 row step1_ mark_extremums_
-                                                    --step1 $ mark_extremums row
-                                                    --mark_extremums row
-                                                    step2 row mark_extremums_
+distance_between_extremums_f  row@((x_prev, _):_) = --step2 row step1_
+                                                    step1 $ mark_extremums row
+
      where
         step1 :: [(Float, Float)] -> [(Float, Float)]
         step1  [] = []
         step1 (_:[]) = []
         step1 (prev@(x_prev, y_prev):curr@(x_curr, y_curr):rest)
-           = (x_prev+dist/2, 255{--dist--}):(step1 $ curr:rest)
+           = (x_prev+dist/2, dist):(step1 $ curr:rest)
            where
               dist = abs(x_prev-x_curr)
 
@@ -163,53 +164,13 @@ distance_between_extremums_f  row@((x_prev, _):_) = --step2 row step1_ mark_extr
         step2 :: [(Float, Float)]  -> [(Float, Float)] -> [(Float, Float)]
         step2 [] _  = []
         step2 _ []  = []
+        step2 _ (_:[])  = []
         step2 (row@(rx,_):row_rest) (extrs@(ex,_):extrs_rest)
            -- |rx == ex = extrs:(step2 row_rest extrs_rest)
            |(rx <= ex) && (fst (head row_rest) > ex) = extrs:(step2 row_rest extrs_rest )
            -- |rx < mx = (rx, 0.0):(step2 row_rest (extrs:extrs_rest) marks_rest)
            |otherwise = (rx, -255.0):(step2 row_rest (extrs:extrs_rest) )
 
-        mark_extremums :: [(Float, Float)] -> [(Float, Float)]
-        mark_extremums [] = []
-        mark_extremums (_:[]) = []
-        mark_extremums input@(prev@(x_prev, y_prev):curr@(x_curr, y_curr):rest)
-           |up y_prev y_curr = step_up input
-           |down y_prev y_curr = step_down input
-           |otherwise = mark_extremums $ curr:rest
-               where
-                  up :: Float -> Float -> Bool
-                  up yp yc = (yp < yc) -- && (y_next < y_curr)
-
-                  down :: Float -> Float -> Bool
-                  down yp yc = (yp > yc) -- && (y_next > y_curr)
-
-                  step_up :: [(Float, Float)] -> [(Float, Float)]
-                  step_up [] = []
-                  step_up (_:_:[]) = []
-                  step_up (prev_@(x_prev_, y_prev_):prev@(x_prev, y_prev):
-                                                   curr@(x_curr, y_curr):rest)
-                     |up y_prev y_curr = (step_up $ prev:curr:rest)
-                     |down y_prev y_curr =
-                             ((get_middle x_prev_ x_curr), y_prev):(step_down $ prev:curr:rest)
-                     |otherwise = step_up $ prev_:curr:rest
-
-
-                  step_down :: [(Float, Float)] -> [(Float, Float)]
-                  step_down [] = []
-                  step_down (_:_:[]) = []
-                  step_down (prev_@(x_prev_, y_prev_):prev@(x_prev, y_prev):
-                                                   curr@(x_curr, y_curr):rest)
-                     |up y_prev y_curr =
-                           ((get_middle x_prev_ x_curr), y_prev):(step_up $ prev:curr:rest)
-                     |down y_prev y_curr = (step_down $ prev:curr:rest)
-                     |otherwise = step_down $ prev_:curr:rest
-
-                  get_middle :: Float -> Float -> Float
-                  get_middle a b
-                     |(abs (a - b)) == 2 = a + 1
-                     |(abs (a - b)) > 2 = a + (abs (a - b))/2 --realToFrac (truncate $ (abs (a - b))/2 )
-                     |(abs (a - b)) < 2 = a
-                     |otherwise = a -- + realToFrac (round $ (abs (a - b))/2 )
 {--    |
        |
        |
@@ -225,7 +186,83 @@ distance_between_extremums_f_dyn  row =
 
 
 
+{-- ================================================================================================
+================================================================================================ --}
+extremums_f :: [(Float, Float)] -> [(Float, Float)]
+extremums_f [] = []
+extremums_f input =  mark_extremums input
+                    -- step2 input $ mark_extremums input
+    where
+    step2 :: [(Float, Float)]  -> [(Float, Float)] -> [(Float, Float)]
+    step2 [] _  = []
+    step2 _ []  = []
+    step2 _ (_:[])  = []
+    step2 (row@(rx,_):row_rest) (extrs@(ex,_):extrs_rest)
+       -- |rx == ex = extrs:(step2 row_rest extrs_rest)
+       |(rx <= ex) && (fst (head row_rest) > ex) = extrs:(step2 row_rest extrs_rest )
+       -- |rx < mx = (rx, 0.0):(step2 row_rest (extrs:extrs_rest) marks_rest)
+       |otherwise = (rx, -255.0):(step2 row_rest (extrs:extrs_rest) )
+{--    |
+       |
+       |
+       |
+       V  --}
+extremums_f_dyn :: [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)]
+extremums_f_dyn  row =
+                                 map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0::Float) ),
+                                      Pd (toDyn y) (show . \z -> fromDyn z (0::Float) ) )) $
+                      extremums_f $
+                      map (\(x, y) -> ((fromDyn x 0)::Float  , (fromDyn y 0)::Float )) row
+---------------------------------------------------------------------
 
+
+
+
+
+{-- ================================================================================================
+================================================================================================ --}
+mark_extremums :: [(Float, Float)] -> [(Float, Float)]
+mark_extremums [] = []
+mark_extremums (_:[]) = []
+mark_extremums input@(prev@(x_prev, y_prev):curr@(x_curr, y_curr):rest)
+   |up y_prev y_curr = step_up input
+   |down y_prev y_curr = step_down input
+   |otherwise = mark_extremums $ curr:rest
+       where
+          up :: Float -> Float -> Bool
+          up yp yc = (yp < yc) -- && (y_next < y_curr)
+
+          down :: Float -> Float -> Bool
+          down yp yc = (yp > yc) -- && (y_next > y_curr)
+
+          step_up :: [(Float, Float)] -> [(Float, Float)]
+          step_up [] = []
+          step_up (_:_:[]) = []
+          step_up (prev_@(x_prev_, y_prev_):prev@(x_prev, y_prev):
+                                           curr@(x_curr, y_curr):rest)
+             |up y_prev y_curr = (step_up $ prev:curr:rest)
+             |down y_prev y_curr =
+                     ((get_middle x_prev_ x_curr), y_prev):(step_down $ prev:curr:rest)
+             |otherwise = step_up $ prev_:curr:rest
+
+
+          step_down :: [(Float, Float)] -> [(Float, Float)]
+          step_down [] = []
+          step_down (_:_:[]) = []
+          step_down (prev_@(x_prev_, y_prev_):prev@(x_prev, y_prev):
+                                           curr@(x_curr, y_curr):rest)
+             |up y_prev y_curr =
+                   ((get_middle x_prev_ x_curr), y_prev):(step_up $ prev:curr:rest)
+             |down y_prev y_curr = (step_down $ prev:curr:rest)
+             |otherwise = step_down $ prev_:curr:rest
+
+          get_middle :: Float -> Float -> Float
+          get_middle a b
+             |(abs (a - b)) == 2 = a + 1
+             |(abs (a - b)) > 2 = a + (abs (a - b))/2 --realToFrac (truncate $ (abs (a - b))/2 )
+             |(abs (a - b)) < 2 = a
+             |otherwise = a -- + realToFrac (round $ (abs (a - b))/2 )
+----------------------------------------------------------------------------------------------------
 
 
 
@@ -254,12 +291,23 @@ apply_processors (processor:rest) input = (processor input):(apply_processors re
 ================================================================================================ --}
 stack_output :: [[ (Processor_data, Processor_data) ]] -> [[Processor_data]]
 stack_output [] = []
-stack_output (data_ : rest ) = (\(x, y) -> x:y:(step1 rest) ) $ unzip data_
+stack_output (data_ : rest ) = stack_output_each_xy (data_ : rest )  -- !!!!!WARNING DERTY HACK!!!!!
+                               -- (\(x, y) -> x:y:(step1 rest) ) $ unzip data_
     where
     step1 :: [[ (Processor_data, Processor_data) ]] -> [[Processor_data]]
     step1 [] = []
     step1 (data_ : rest ) = (\(x, y) -> y:(step1 rest)) $ unzip data_
 ----------------------------------------------------------------------------------------------------
+
+
+
+{-- ================================================================================================
+================================================================================================ --}
+stack_output_each_xy :: [[ (Processor_data, Processor_data) ]] -> [[Processor_data]]
+stack_output_each_xy [] = []
+stack_output_each_xy (data_ : rest ) = (\(x, y) -> x:y:(stack_output_each_xy rest) ) $ unzip data_
+----------------------------------------------------------------------------------------------------
+
 
 
 
