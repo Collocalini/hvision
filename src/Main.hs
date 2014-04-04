@@ -41,6 +41,7 @@ import Global
 gnuplot_file :: DMap.Map String String -> IO String
 gnuplot_file tag_DMap = read_file_if_exists (DMap.findWithDefault "Not found"
                                                                  ( argument_gnuplot_file) tag_DMap)
+
 data_file :: DMap.Map String String -> [IO String]
 data_file tag_DMap = [read_file_if_exists (DMap.findWithDefault "Not found" ( argument_data_file)
                                                                                          tag_DMap)]
@@ -92,32 +93,42 @@ weed_data_from_input n str = concat $ map ((step1 []).(drop n).lines) str
 
 
 
-
-{-- ================================================================================================
-================================================================================================ --}
-read_file_if_exists :: FilePath -> IO String
-read_file_if_exists [] = do return ""
-read_file_if_exists name  = do
-       handle <- openFile name ReadMode
-       c <- hGetContents handle
-       return c
--------------------------------------------------------------
-
-
-
-
 {-- ================================================================================================
 ================================================================================================ --}
 iterate_all_data :: DMap.Map String String -> [String] ->  IO ()
 iterate_all_data _ [] = return ()
 iterate_all_data tag_DMap (x:rest)  = do
-    gnuplot_file tag_DMap >>= \s -> putStr $ s ++ x ++ "\nEOF\n" ++
-                               s ++ x ++ "\nEOF\n" -- !!!WARNING DERTY HACK TO GET GNUPLOT WORKING!!!
-                               ++
-                               s ++ x ++ "\nEOF\n" -- !!!WARNING DERTY HACK TO GET GNUPLOT WORKING!!!
-    iterate_all_data tag_DMap rest
+    data_iterator tag_DMap (x:rest) repeats
+    where
+        repeats = read $ (DMap.findWithDefault default_repeat_frames_of_output
+                                               argument_repeat_frames_of_output tag_DMap)
 ---------------------------------------------------
 
+
+{-- ================================================================================================
+================================================================================================ --}
+data_iterator :: DMap.Map String String -> [String] -> Int ->  IO ()
+data_iterator _ [] _ = return ()
+data_iterator tag_DMap (x:rest) i = do
+    gnuplot_file tag_DMap >>= \s -> step1 i s x
+    data_iterator tag_DMap rest i
+    where
+       step1 :: Int -> String -> String -> IO ()
+       step1 i s x
+         |i > 0 = do data_repeater s x
+                     step1 (i-1) s x
+         |otherwise = return ()
+---------------------------------------------------
+
+
+
+{-- ================================================================================================
+================================================================================================ --}
+data_repeater :: String -> String ->  IO ()
+data_repeater _ [] = return ()
+data_repeater s x  = do putStr $ s ++ x ++ "\nEOF\n"
+
+---------------------------------------------------
 
 
 

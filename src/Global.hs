@@ -11,6 +11,7 @@ argument_test,
 argument_data_bypass_mode ,
 argument_data_process,
 argument_use_columns,
+argument_repeat_frames_of_output,
 
 default_data_file,
 default_single_data_file,
@@ -22,6 +23,7 @@ default_test,
 default_data_bypass_mode,
 default_data_process,
 default_use_columns,
+default_repeat_frames_of_output,
 
 identity_i_processor',
 identity_f_processor',
@@ -38,11 +40,13 @@ tag_DMap,
 
 list_arguments,
 
-eol_char
+eol_char,
 
+read_file_if_exists
 ) where
 
 import qualified Data.Map as DMap
+import System.IO
 
 argument_data_file = "data-file"
 argument_single_data_file = "single-data-file"
@@ -54,6 +58,7 @@ argument_test = "test"
 argument_data_bypass_mode = "data-bypass-mode"
 argument_data_process = "data-process"
 argument_use_columns = "use-columns"
+argument_repeat_frames_of_output = "repeat-frames-of-output"
 
 default_data_file = "data"
 default_single_data_file = "false"
@@ -65,6 +70,7 @@ default_data_bypass_mode = "false"
 default_data_process = "-"
 default_use_columns = "1:2"
 default_data_from_stdin = "-"
+default_repeat_frames_of_output = "1"
 
 
 
@@ -118,7 +124,8 @@ options =  [
             argument_multipage_data_file,
             argument_data_process,
             argument_use_columns,
-            argument_data_from_stdin
+            argument_data_from_stdin,
+            argument_repeat_frames_of_output
            ]
 
 {-- ================================================================================================
@@ -126,16 +133,17 @@ options =  [
 tag_DMap::[String] -> DMap.Map String String
 tag_DMap [] = DMap.fromList [
         --("",""),
-        (argument_data_file,           default_data_file ),
-        (argument_gnuplot_file,        default_gnuplot_file ),
-        (argument_range_of_files,      default_range_of_files),
-        (argument_test ,               default_test),
-        (argument_data_bypass_mode,    default_data_bypass_mode),
-        (argument_single_data_file,    default_single_data_file),
-        (argument_multipage_data_file, default_multipage_data_file),
-        (argument_data_process ,       default_data_process),
-        (argument_use_columns,         default_use_columns),
-        (argument_data_from_stdin,     default_data_from_stdin)
+        (argument_data_file,               default_data_file ),
+        (argument_gnuplot_file,            default_gnuplot_file ),
+        (argument_range_of_files,          default_range_of_files),
+        (argument_test ,                   default_test),
+        (argument_data_bypass_mode,        default_data_bypass_mode),
+        (argument_single_data_file,        default_single_data_file),
+        (argument_multipage_data_file,     default_multipage_data_file),
+        (argument_data_process ,           default_data_process),
+        (argument_use_columns,             default_use_columns),
+        (argument_data_from_stdin,         default_data_from_stdin),
+        (argument_repeat_frames_of_output, default_repeat_frames_of_output)
    ]----]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]
 
 tag_DMap lst = DMap.union (DMap.fromList $ map (\(Just x) -> x) $ list_arguments lst) $
@@ -169,3 +177,16 @@ list_arguments (tag:rest)
 
 
 eol_char = "\n"
+
+
+
+{-- ================================================================================================
+================================================================================================ --}
+read_file_if_exists :: FilePath -> IO String
+read_file_if_exists [] = do return ""
+read_file_if_exists name  = do
+       handle <- openFile name ReadMode
+       c <- hGetContents handle
+       return c
+-------------------------------------------------------------
+

@@ -138,11 +138,6 @@ derivative_f_dyn  row = map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0
 
 
 {-- ================================================================================================
-
-Please take a notice:
-   step2 function is only used to produce output of the same lenght as input. This is only needed
-because stack_outpu downstream rips X argument off.
-
 ================================================================================================ --}
 distance_between_extremums_f :: [(Float, Float)] -> [(Float, Float)]
 distance_between_extremums_f  [] = []
@@ -287,7 +282,7 @@ space_out (row@(rx,_):row_rest) (extrs@(ex,_):extrs_rest)
 ================================================================================================ --}
 stack_output :: [[ (Processor_data, Processor_data) ]] -> [[Processor_data]]
 stack_output [] = []
-stack_output (data_ : rest ) = stack_output_each_xy (data_ : rest )  -- !!!!!WARNING DERTY HACK!!!!!
+stack_output (data_ : rest ) = stack_output_each_xy (data_ : rest )  -- !!!!!WARNING DIRTY HACK!!!!!
                                -- (\(x, y) -> x:y:(step1 rest) ) $ unzip data_
     where
     step1 :: [[ (Processor_data, Processor_data) ]] -> [[Processor_data]]
