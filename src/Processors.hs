@@ -161,16 +161,6 @@ distance_between_extremums_f  row@((x_prev, _):_) = --step2 row step1_
         step1_ = step1 mark_extremums_          --- !!! shortcut
         mark_extremums_ = mark_extremums row    --- !!! shortcut
 
-       {-- step2 :: [(Float, Float)]  -> [(Float, Float)] -> [(Float, Float)]
-        step2 [] _  = []
-        step2 _ []  = []
-        step2 _ (_:[])  = []
-        step2 (row@(rx,_):row_rest) (extrs@(ex,_):extrs_rest)
-           -- |rx == ex = extrs:(step2 row_rest extrs_rest)
-           |(rx <= ex) && (fst (head row_rest) > ex) = extrs:(step2 row_rest extrs_rest )
-           -- |rx < mx = (rx, 0.0):(step2 row_rest (extrs:extrs_rest) marks_rest)
-           |otherwise = (rx, -255.0):(step2 row_rest (extrs:extrs_rest) ) --}
-
 {--    |
        |
        |
@@ -192,27 +182,14 @@ extremums_f :: [(Float, Float)] -> [(Float, Float)]
 extremums_f [] = []
 extremums_f input =  mark_extremums input
                      --step2 input $ mark_extremums input
-    where
-    step2 :: [(Float, Float)]  -> [(Float, Float)] -> [(Float, Float)]
-    step2 [] _  = []
-    step2 (row@(rx,_):row_rest) []
-       |otherwise = (rx, 0):(step2 row_rest [] )
-    --step2 _ (_:[])  = []
-    step2 (row@(rx,_):row_rest) (extrs@(ex,_):[])
-       |otherwise = (rx, 0):(step2 row_rest [])
-    step2 (row@(rx,_):row_rest) (extrs@(ex,_):extrs_rest)
-       -- |rx == ex = extrs:(step2 row_rest extrs_rest)
-       |(rx <= ex) && (fst (head row_rest) > ex) = extrs:(step2 row_rest extrs_rest )
-       -- |rx < mx = (rx, 0.0):(step2 row_rest (extrs:extrs_rest) marks_rest)
-       |otherwise = (rx, 0):(step2 row_rest (extrs:extrs_rest) )
+
 {--    |
        |
        |
        |
        V  --}
 extremums_f_dyn :: [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)]
-extremums_f_dyn  row =
-                                 map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0:: Float) ),
+extremums_f_dyn  row =map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0:: Float) ),
                                       Pd (toDyn y) (show . \z -> fromDyn z (0:: Float) ) )) $
                       extremums_f $
                       map (\(x, y) -> ((fromDyn x 0):: Float  , (fromDyn y 0):: Float )) row
@@ -228,70 +205,44 @@ mark_extremums :: [(Float, Float)] -> [(Float, Float)]
 mark_extremums [] = []
 mark_extremums (_:[]) = []
 mark_extremums input@(prev@(x_prev, y_prev):curr@(x_curr, y_curr):rest) = step2 $ step1 input
- --  |up y_prev y_curr = step1 input --step_up input
- --  |down y_prev y_curr = step1 curr:rest --step_down input
- --  |otherwise = mark_extremums $ curr:rest
-       where
-          up :: Float -> Float -> Float -> Bool
-          up yp yc yn= (yp < yc) && (yn < yc)
+   where
+    up :: Float -> Float -> Float -> Bool
+    up yp yc yn= (yp < yc) && (yn < yc)
 
-          down :: Float -> Float -> Float -> Bool
-          down yp yc yn = (yp > yc) && (yn > yc)
-{--
-          step_up :: [(Float, Float)] -> [(Float, Float)]
-          step_up [] = []
-          step_up (_:_:[]) = []
-          step_up (prev_@(x_prev_, y_prev_):prev@(x_prev, y_prev):
-                                           curr@(x_curr, y_curr):rest)
-             |up y_prev y_curr = (step_up $ prev:curr:rest)
-             |down y_prev y_curr =
-                     ((get_middle x_prev_ x_curr), y_prev):(step_down $ prev:curr:rest)
-             |otherwise = step_up $ prev_:curr:rest
+    down :: Float -> Float -> Float -> Bool
+    down yp yc yn = (yp > yc) && (yn > yc)
 
 
-          step_down :: [(Float, Float)] -> [(Float, Float)]
-          step_down [] = []
-          step_down (_:_:[]) = []
-          step_down (prev_@(x_prev_, y_prev_):prev@(x_prev, y_prev):
-                                           curr@(x_curr, y_curr):rest)
-             |up y_prev y_curr =
-                   ((get_middle x_prev_ x_curr), y_prev):(step_up $ prev:curr:rest)
-             |down y_prev y_curr = (step_down $ prev:curr:rest)
-             |otherwise = step_down $ prev_:curr:rest
+    -- eliminate flats
+    step1 :: [(Float, Float)] -> [(Float, Float)]
+    step1 [] = []
+    step1 (_:[]) = []
+    step1 (bef@(x_bef, y_bef):prev@(x_prev, y_prev):[])
+        |(y_bef == y_prev) = [((get_middle x_bef x_prev), y_prev)]
+        |otherwise = [bef, prev]
+    step1 (bef@(x_bef, y_bef):prev@(x_prev, y_prev):curr@(x_curr, y_curr):rest)
+        |(y_bef == y_prev) && (y_prev == y_curr) = step1 $ bef:curr:rest
+        |(y_bef == y_prev) && (y_prev /= y_curr) = (middle_point bef prev):
+                                                                    (step1 $ curr:curr:rest)
+        |(y_bef /= y_prev) && (y_prev == y_curr) = bef:(step1 $ prev:prev:curr:rest)
+        |(y_bef /= y_prev) && (y_prev /= y_curr) = bef:prev:(step1 $ curr:curr:rest)
+        |otherwise = (step1 $ curr:rest)
 
-             --}
-
-          -- eliminate flats
-          step1 :: [(Float, Float)] -> [(Float, Float)]
-          step1 [] = []
-          step1 (_:[]) = []
-          step1 (bef@(x_bef, y_bef):prev@(x_prev, y_prev):[])
-             |(y_bef == y_prev) = [((get_middle x_bef x_prev), y_prev)]
-             |otherwise = [bef, prev]
-          step1 (bef@(x_bef, y_bef):prev@(x_prev, y_prev):curr@(x_curr, y_curr):rest)
-             |(y_bef == y_prev) && (y_prev == y_curr) = step1 $ bef:curr:rest
-             |(y_bef == y_prev) && (y_prev /= y_curr) = (middle_point bef prev):
-                                                                            (step1 $ curr:curr:rest)
-             |(y_bef /= y_prev) && (y_prev == y_curr) = bef:(step1 $ prev:prev:curr:rest)
-             |(y_bef /= y_prev) && (y_prev /= y_curr) = bef:prev:(step1 $ curr:curr:rest)
-             |otherwise = (step1 $ curr:rest)
+    -- find extremums
+    step2 :: [(Float, Float)] -> [(Float, Float)]
+    step2 [] = []
+    step2 (_:_:[]) = []
+    step2 (prev@(x_prev, y_prev):curr@(x_curr, y_curr):next@(x_next, y_next):rest)
+        |up y_prev y_curr y_next = curr:(step2 $ curr:next:rest)
+        |down y_prev y_curr y_next = curr:(step2 $ curr:next:rest)
+        |otherwise = step2 $ curr:next:rest
 
 
-          step2 :: [(Float, Float)] -> [(Float, Float)]
-          step2 [] = []
-          step2 (_:_:[]) = []
-          step2 (prev@(x_prev, y_prev):curr@(x_curr, y_curr):next@(x_next, y_next):rest)
-             |up y_prev y_curr y_next = curr:(step2 $ curr:next:rest)
-             |down y_prev y_curr y_next = curr:(step2 $ curr:next:rest)
-             |otherwise = step2 $ curr:next:rest
+    get_middle :: Float -> Float -> Float
+    get_middle a b = a + (abs $ a - b)/2
 
-
-
-          get_middle :: Float -> Float -> Float
-          get_middle a b = a + (abs $ a - b)/2
-
-          middle_point :: (Float, Float) -> (Float, Float) -> (Float, Float)
-          middle_point a@(ax,ay) b@(bx,by) = ((get_middle ax bx), ay)
+    middle_point :: (Float, Float) -> (Float, Float) -> (Float, Float)
+    middle_point a@(ax,ay) b@(bx,by) = ((get_middle ax bx), ay)
 ----------------------------------------------------------------------------------------------------
 
 
@@ -312,6 +263,21 @@ apply_processors :: [( [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)
                                      [(Dynamic, Dynamic)] -> [[ (Processor_data, Processor_data) ]]
 apply_processors [] _ = []
 apply_processors (processor:rest) input = (processor input):(apply_processors rest input)
+----------------------------------------------------------------------------------------------------
+
+
+
+{-- ================================================================================================
+================================================================================================ --}
+space_out :: [(Float, Float)]  -> [(Float, Float)] -> [(Float, Float)]
+space_out [] _  = []
+space_out (row@(rx,_):row_rest) []
+   |otherwise = (rx, 0):(space_out row_rest [] )
+space_out (row@(rx,_):row_rest) (extrs@(ex,_):[])
+   |otherwise = (rx, 0):(space_out row_rest [])
+space_out (row@(rx,_):row_rest) (extrs@(ex,_):extrs_rest)
+   |(rx <= ex) && (fst (head row_rest) > ex) = extrs:(space_out row_rest extrs_rest )
+   |otherwise = (rx, 0):(space_out row_rest (extrs:extrs_rest) )
 ----------------------------------------------------------------------------------------------------
 
 
