@@ -17,7 +17,7 @@ xxx
 #cat xxx | runhaskell -i../src/ ../src/Main.hs --gnuplot-file plot.gpi \
 
 cat xxx |./diser --gnuplot-file plot.gpi \
-        --data-process identity_f,distance_between_extremums_f,extremums_f \
+        --data-process identity_f,extremums_f,distance_between_extremums_f \
         --use-columns 1:2 \
         --data-from-stdin 3 \
         |gnuplot -persist \

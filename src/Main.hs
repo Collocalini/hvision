@@ -111,7 +111,10 @@ read_file_if_exists name  = do
 iterate_all_data :: DMap.Map String String -> [String] ->  IO ()
 iterate_all_data _ [] = return ()
 iterate_all_data tag_DMap (x:rest)  = do
-    gnuplot_file tag_DMap >>= \s -> putStr $ s ++ x ++ "\nEOF\n"
+    gnuplot_file tag_DMap >>= \s -> putStr $ s ++ x ++ "\nEOF\n" ++
+                               s ++ x ++ "\nEOF\n" -- !!!WARNING DERTY HACK TO GET GNUPLOT WORKING!!!
+                               ++
+                               s ++ x ++ "\nEOF\n" -- !!!WARNING DERTY HACK TO GET GNUPLOT WORKING!!!
     iterate_all_data tag_DMap rest
 ---------------------------------------------------
 

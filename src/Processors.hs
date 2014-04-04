@@ -59,10 +59,10 @@ identity_i  row = row
        |
        V  --}
 identity_i_dyn :: [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)]
-identity_i_dyn  row = map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0::Int) ),
-                                      Pd (toDyn y) (show . \z -> fromDyn z (0::Int) ) )) $
+identity_i_dyn  row = map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0:: Int) ),
+                                      Pd (toDyn y) (show . \z -> fromDyn z (0:: Int) ) )) $
                       identity_i $
-                      map (\(x, y) -> ((fromDyn x 0)  , (fromDyn y 0) )) row
+                      map (\(x, y) -> ((fromDyn x 0) , (fromDyn y 0) )) row
 ---------------------------------
 
 
@@ -77,10 +77,10 @@ identity_f  row = row
        |
        V  --}
 identity_f_dyn :: [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)]
-identity_f_dyn  row = map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0::Float)),
-                                      Pd (toDyn y) (show . \z -> fromDyn z (0::Float)) )) $
+identity_f_dyn  row = map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0:: Float)),
+                                      Pd (toDyn y) (show . \z -> fromDyn z (0:: Float)) )) $
                       identity_f $
-                      map (\(x, y) -> ((fromDyn x 0)::Float  , (fromDyn y (0::Float)) )) row
+                      map (\(x, y) -> ((fromDyn x 0):: Float , (fromDyn y (0:: Float)) )) row
 ---------------------------------
 
 
@@ -101,10 +101,10 @@ derivative_i  row@((x_prev, _):_) = (x_prev, 0):(step1 row)
        |
        V  --}
 derivative_i_dyn :: [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)]
-derivative_i_dyn  row = map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0::Int) ),
-                                      Pd (toDyn y) (show . \z -> fromDyn z (0::Int) ) )) $
+derivative_i_dyn  row = map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0:: Int) ),
+                                      Pd (toDyn y) (show . \z -> fromDyn z (0:: Int) ) )) $
                       derivative_i $
-                      map (\(x, y) -> ((fromDyn x 0)::Int  , (fromDyn y 0)::Int )) row
+                      map (\(x, y) -> ((fromDyn x 0):: Int , (fromDyn y 0):: Int )) row
 ----------------------------------------------------
 
 
@@ -127,10 +127,10 @@ derivative_f  row@((x_prev, _):_) = (x_prev, 0):(step1 row)
        |
        V  --}
 derivative_f_dyn :: [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)]
-derivative_f_dyn  row = map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0::Float) ),
-                                      Pd (toDyn y) (show . \z -> fromDyn z (0::Float) ) )) $
+derivative_f_dyn  row = map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0:: Float) ),
+                                      Pd (toDyn y) (show . \z -> fromDyn z (0:: Float) ) )) $
                       derivative_f $
-                      map (\(x, y) -> ((fromDyn x 0)::Float  , (fromDyn y 0)::Float )) row
+                      map (\(x, y) -> ((fromDyn x 0):: Float , (fromDyn y 0):: Float )) row
 ---------------------------------------------------------------------
 
 
@@ -161,7 +161,7 @@ distance_between_extremums_f  row@((x_prev, _):_) = --step2 row step1_
         step1_ = step1 mark_extremums_          --- !!! shortcut
         mark_extremums_ = mark_extremums row    --- !!! shortcut
 
-        step2 :: [(Float, Float)]  -> [(Float, Float)] -> [(Float, Float)]
+       {-- step2 :: [(Float, Float)]  -> [(Float, Float)] -> [(Float, Float)]
         step2 [] _  = []
         step2 _ []  = []
         step2 _ (_:[])  = []
@@ -169,7 +169,7 @@ distance_between_extremums_f  row@((x_prev, _):_) = --step2 row step1_
            -- |rx == ex = extrs:(step2 row_rest extrs_rest)
            |(rx <= ex) && (fst (head row_rest) > ex) = extrs:(step2 row_rest extrs_rest )
            -- |rx < mx = (rx, 0.0):(step2 row_rest (extrs:extrs_rest) marks_rest)
-           |otherwise = (rx, -255.0):(step2 row_rest (extrs:extrs_rest) )
+           |otherwise = (rx, -255.0):(step2 row_rest (extrs:extrs_rest) ) --}
 
 {--    |
        |
@@ -178,10 +178,10 @@ distance_between_extremums_f  row@((x_prev, _):_) = --step2 row step1_
        V  --}
 distance_between_extremums_f_dyn :: [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)]
 distance_between_extremums_f_dyn  row =
-                                 map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0::Float) ),
-                                      Pd (toDyn y) (show . \z -> fromDyn z (0::Float) ) )) $
+                                 map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0:: Float) ),
+                                      Pd (toDyn y) (show . \z -> fromDyn z (0:: Float) ) )) $
                       distance_between_extremums_f $
-                      map (\(x, y) -> ((fromDyn x 0)::Float  , (fromDyn y 0)::Float )) row
+                      map (\(x, y) -> ((fromDyn x 0):: Float  , (fromDyn y 0):: Float )) row
 ---------------------------------------------------------------------
 
 
@@ -191,17 +191,20 @@ distance_between_extremums_f_dyn  row =
 extremums_f :: [(Float, Float)] -> [(Float, Float)]
 extremums_f [] = []
 extremums_f input =  mark_extremums input
-                    -- step2 input $ mark_extremums input
+                     --step2 input $ mark_extremums input
     where
     step2 :: [(Float, Float)]  -> [(Float, Float)] -> [(Float, Float)]
     step2 [] _  = []
-    step2 _ []  = []
-    step2 _ (_:[])  = []
+    step2 (row@(rx,_):row_rest) []
+       |otherwise = (rx, 0):(step2 row_rest [] )
+    --step2 _ (_:[])  = []
+    step2 (row@(rx,_):row_rest) (extrs@(ex,_):[])
+       |otherwise = (rx, 0):(step2 row_rest [])
     step2 (row@(rx,_):row_rest) (extrs@(ex,_):extrs_rest)
        -- |rx == ex = extrs:(step2 row_rest extrs_rest)
        |(rx <= ex) && (fst (head row_rest) > ex) = extrs:(step2 row_rest extrs_rest )
        -- |rx < mx = (rx, 0.0):(step2 row_rest (extrs:extrs_rest) marks_rest)
-       |otherwise = (rx, -255.0):(step2 row_rest (extrs:extrs_rest) )
+       |otherwise = (rx, 0):(step2 row_rest (extrs:extrs_rest) )
 {--    |
        |
        |
@@ -209,10 +212,10 @@ extremums_f input =  mark_extremums input
        V  --}
 extremums_f_dyn :: [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)]
 extremums_f_dyn  row =
-                                 map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0::Float) ),
-                                      Pd (toDyn y) (show . \z -> fromDyn z (0::Float) ) )) $
+                                 map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0:: Float) ),
+                                      Pd (toDyn y) (show . \z -> fromDyn z (0:: Float) ) )) $
                       extremums_f $
-                      map (\(x, y) -> ((fromDyn x 0)::Float  , (fromDyn y 0)::Float )) row
+                      map (\(x, y) -> ((fromDyn x 0):: Float  , (fromDyn y 0):: Float )) row
 ---------------------------------------------------------------------
 
 
@@ -224,17 +227,17 @@ extremums_f_dyn  row =
 mark_extremums :: [(Float, Float)] -> [(Float, Float)]
 mark_extremums [] = []
 mark_extremums (_:[]) = []
-mark_extremums input@(prev@(x_prev, y_prev):curr@(x_curr, y_curr):rest)
-   |up y_prev y_curr = step_up input
-   |down y_prev y_curr = step_down input
-   |otherwise = mark_extremums $ curr:rest
+mark_extremums input@(prev@(x_prev, y_prev):curr@(x_curr, y_curr):rest) = step2 $ step1 input
+ --  |up y_prev y_curr = step1 input --step_up input
+ --  |down y_prev y_curr = step1 curr:rest --step_down input
+ --  |otherwise = mark_extremums $ curr:rest
        where
-          up :: Float -> Float -> Bool
-          up yp yc = (yp < yc) -- && (y_next < y_curr)
+          up :: Float -> Float -> Float -> Bool
+          up yp yc yn= (yp < yc) && (yn < yc)
 
-          down :: Float -> Float -> Bool
-          down yp yc = (yp > yc) -- && (y_next > y_curr)
-
+          down :: Float -> Float -> Float -> Bool
+          down yp yc yn = (yp > yc) && (yn > yc)
+{--
           step_up :: [(Float, Float)] -> [(Float, Float)]
           step_up [] = []
           step_up (_:_:[]) = []
@@ -256,12 +259,39 @@ mark_extremums input@(prev@(x_prev, y_prev):curr@(x_curr, y_curr):rest)
              |down y_prev y_curr = (step_down $ prev:curr:rest)
              |otherwise = step_down $ prev_:curr:rest
 
+             --}
+
+          -- eliminate flats
+          step1 :: [(Float, Float)] -> [(Float, Float)]
+          step1 [] = []
+          step1 (_:[]) = []
+          step1 (bef@(x_bef, y_bef):prev@(x_prev, y_prev):[])
+             |(y_bef == y_prev) = [((get_middle x_bef x_prev), y_prev)]
+             |otherwise = [bef, prev]
+          step1 (bef@(x_bef, y_bef):prev@(x_prev, y_prev):curr@(x_curr, y_curr):rest)
+             |(y_bef == y_prev) && (y_prev == y_curr) = step1 $ bef:curr:rest
+             |(y_bef == y_prev) && (y_prev /= y_curr) = (middle_point bef prev):
+                                                                            (step1 $ curr:curr:rest)
+             |(y_bef /= y_prev) && (y_prev == y_curr) = bef:(step1 $ prev:prev:curr:rest)
+             |(y_bef /= y_prev) && (y_prev /= y_curr) = bef:prev:(step1 $ curr:curr:rest)
+             |otherwise = (step1 $ curr:rest)
+
+
+          step2 :: [(Float, Float)] -> [(Float, Float)]
+          step2 [] = []
+          step2 (_:_:[]) = []
+          step2 (prev@(x_prev, y_prev):curr@(x_curr, y_curr):next@(x_next, y_next):rest)
+             |up y_prev y_curr y_next = curr:(step2 $ curr:next:rest)
+             |down y_prev y_curr y_next = curr:(step2 $ curr:next:rest)
+             |otherwise = step2 $ curr:next:rest
+
+
+
           get_middle :: Float -> Float -> Float
-          get_middle a b
-             |(abs (a - b)) == 2 = a + 1
-             |(abs (a - b)) > 2 = a + (abs (a - b))/2 --realToFrac (truncate $ (abs (a - b))/2 )
-             |(abs (a - b)) < 2 = a
-             |otherwise = a -- + realToFrac (round $ (abs (a - b))/2 )
+          get_middle a b = a + (abs $ a - b)/2
+
+          middle_point :: (Float, Float) -> (Float, Float) -> (Float, Float)
+          middle_point a@(ax,ay) b@(bx,by) = ((get_middle ax bx), ay)
 ----------------------------------------------------------------------------------------------------
 
 
@@ -350,7 +380,7 @@ stringToIntList_dyn :: String -> [(Dynamic, Dynamic)]
 stringToIntList_dyn str =  map step1 $ lines str
   where
   step1 :: String -> (Dynamic, Dynamic)
-  step1 str = (\x -> (toDyn ((read $ head x)::Int) ,toDyn ((read $ head $ tail x)::Int) ) ) $
+  step1 str = (\x -> (toDyn ((read $ head x):: Int) ,toDyn ((read $ head $ tail x):: Int) ) ) $
                                                                                           words str
 ----------------------------------------------------------------------------------------------------
 
