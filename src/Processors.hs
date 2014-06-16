@@ -169,8 +169,8 @@ derivative_type1_f_dyn  row = map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDy
 
 
 {-- ================================================================================================
--- assumes that first_n are sorted by x cordinate
--- assumes that row_rest is sorted by x cordinate
+-- assumes that first_n are sorted by x coordinate
+-- assumes that row_rest is sorted by x coordinate
 ================================================================================================ --}
 break_to_n :: [(Float, Float)] -> [(Float, Float)] -> [[(Float, Float)]]
 break_to_n first_n row_rest = step1 (delimeters first_n) row_rest
@@ -217,9 +217,21 @@ processor_x_n n row = do
 
   where
 
-  falloff :: Float-> Float -> [(Float, Float)] -> [(Float, Float, (Float, Float), (Float, Float))]
-  falloff leftmost rightmost ns = []
-  --step1
+  falloff :: (Float, Float) -> (Float, Float) -> [(Float, Float)] -> [(Float, Float, (Float, Float), (Float, Float))]
+  falloff _ _ [] = []
+  falloff l@(lx, ly) r@(rx, ry) ((x,y):rest) = (x,y, f1, f2):(falloff l r rest)
+    where
+    m x1 y1 x2 y2 = (y2-y1)/(x2-x1)
+    b x1 y1 m     = y1 - m*x1
+
+    m1 = m lx ly x y
+    b1 = b lx ly m1
+    m2 = m x y rx ry
+    b2 = b x y m1
+
+    f1 = (m1, b1)
+    f2 = (m2, b2)
+
 ----------------------------------------------------------------------------------------------------
 
 
