@@ -137,6 +137,99 @@ derivative_f_dyn  row = map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0
 
 
 
+
+
+
+{-- ================================================================================================
+================================================================================================ --}
+derivative_type1_f :: [(Float, Float)] -> [(Float, Float)]
+derivative_type1_f  [] = []
+derivative_type1_f  row@((x_prev, _):_) = (x_prev, 0):(step1 row)
+     where
+        step1 :: [(Float, Float)] -> [(Float, Float)]
+        step1  [] = []
+        step1 (_:[]) = []
+        step1 ((x_prev, y_prev):rest) = ((\(x, y) -> (x_prev + ( (abs $ x - x_prev)/2),
+                                                  y-y_prev) ) $ head rest):(step1 $ rest)
+{--    |
+       |
+       |
+       |
+       V  --}
+derivative_type1_f_dyn :: [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)]
+derivative_type1_f_dyn  row = map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0:: Float) ),
+                                      Pd (toDyn y) (show . \z -> fromDyn z (0:: Float) ) )) $
+                      derivative_f $
+                      map (\(x, y) -> ((fromDyn x 0):: Float , (fromDyn y 0):: Float )) row
+---------------------------------------------------------------------
+
+
+
+
+
+
+{-- ================================================================================================
+-- assumes that first_n are sorted by x cordinate
+-- assumes that row_rest is sorted by x cordinate
+================================================================================================ --}
+break_to_n :: [(Float, Float)] -> [(Float, Float)] -> [[(Float, Float)]]
+break_to_n first_n row_rest = step1 (delimeters first_n) row_rest
+   where
+   delimeters :: [(Float, Float)] -> [Float]
+   delimeters [] = []
+   delimeters [_] = []
+   delimeters ((x, _):(xn, _):rest) =  ((xn - x)/2 ):(delimeters rest)
+
+   in_range :: Float -> (Float, Float) -> Bool
+   in_range lim (x, y) = x <= lim
+
+   step1 :: [Float] -> [(Float, Float)] -> [[(Float, Float)]]
+   step1 [] row = [row]
+   step1 (lim:rest) row = (\(l,r) -> l:(step1 rest r) ) $ span (in_range lim) row
+----------------------------------------------------------------------------------------------------
+
+
+
+
+sortLt_by_y (_, ly) (_, ry)
+  | ly < ry = GT
+  | ly > ry = LT
+  | ly == ry = EQ
+
+
+sortGt_by_x (lx, _) (rx, _)
+  | lx < rx = LT
+  | lx > rx = GT
+  | lx == rx = EQ
+
+
+{-- ================================================================================================
+================================================================================================ --}
+processor_x_n :: Int -> [(Float, Float)] -> [(Float, Float)]
+processor_x_n n row = do
+  let big_first = sortBy (sortLt_by_y) row
+  let (first_n, row_rest) = splitAt n big_first
+  let first_n_sorted_by_x = sortBy sortGt_by_x first_n
+  let (next_n, row_rest) = splitAt n row_rest
+  let assigned = break_to_n first_n_sorted_by_x next_n  -- assigned to parent extremums
+  big_first
+
+
+  where
+
+  falloff :: Float-> Float -> [(Float, Float)] -> [(Float, Float, (Float, Float), (Float, Float))]
+  falloff leftmost rightmost ns = []
+  --step1
+----------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
 {-- ================================================================================================
 ================================================================================================ --}
 distance_between_extremums_f :: [(Float, Float)] -> [(Float, Float)]
