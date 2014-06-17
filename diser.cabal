@@ -3,7 +3,7 @@ version: 0.0.1
 cabal-version: -any
 build-type: Simple
 license: PublicDomain
-license-file: ""
+license-file: "license"
 copyright:
 maintainer:
 build-depends: base -any, containers -any, parsec -any, pipes -any
