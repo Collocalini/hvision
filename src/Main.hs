@@ -371,6 +371,7 @@ routine args
             |distance_between_extremums_f_processor' proc = distance_between_extremums_f_dyn:
                                                                                         (step2 rest)
             |extremums_f_processor' proc = extremums_f_dyn:(step2 rest)
+            |processor_x_2_f_processor' proc = processor_x_2_f_dyn:(step2 rest)
             |otherwise = step2 rest
 
 

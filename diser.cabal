@@ -41,7 +41,7 @@ hs-source-dirs: src
 other-modules: Processors AdHoc Global
 ghc-prof-options:
 ghc-shared-options:
-ghc-options:
+ghc-options: -Wall -fwarn-tabs
 hugs-options:
 nhc98-options:
 jhc-options:
