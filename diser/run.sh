@@ -5,12 +5,12 @@
 #./diser --gnuplot-file plot.gpi --range-of-files 1..1000 --data-process identity --data-file /home/hokum/Documents/pixels_to_signals/sda3/temp/new_Automatic_Traffic_Surveillance.avi/data_files/data |gnuplot -persist|ffmpeg -f mjpeg -i pipe: -f avi -vcodec copy -s 640x480 pipe:|mplayer -profile prof3 -
 
 cat xxx |diser --gnuplot-file plot.gpi \
-        --data-process extremums_f,processor_x_2_f \
+        --data-process extremums_f,processor_x_2_f,processor_x_2_2_f,processor_x_2_3_f \
         --use-columns 1:2 \
         --data-from-stdin 3 \
-        --repeat-frames-of-output 2 \
-       # |gnuplot -persist \
-       # |ffmpeg -f mjpeg -i pipe: -f avi -vcodec copy -y -s 1280x511 avi2
+        --repeat-frames-of-output 4 \
+        |gnuplot -persist \
+        |ffmpeg -f mjpeg -i pipe: -f avi -vcodec copy -y -s 1280x511 avi2
 
 : << 'xxx'
 ./diser --gnuplot-file plot.gpi \

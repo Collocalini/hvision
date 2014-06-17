@@ -32,6 +32,8 @@ derivative_i_processor',
 distance_between_extremums_f_processor',
 extremums_f_processor',
 processor_x_2_f_processor',
+processor_x_2_2_f_processor',
+processor_x_2_3_f_processor',
 
 flags ,
 
@@ -118,6 +120,15 @@ processor_x_2_f_processor' str
    |otherwise = False
 
 
+processor_x_2_2_f_processor' :: String -> Bool
+processor_x_2_2_f_processor' str
+   |"processor_x_2_2_f" == str = True
+   |otherwise = False
+
+processor_x_2_3_f_processor' :: String -> Bool
+processor_x_2_3_f_processor' str
+   |"processor_x_2_3_f" == str = True
+   |otherwise = False
 
 flags = [
          argument_test,

@@ -15,6 +15,10 @@ extremums_f,
 extremums_f_dyn,
 processor_x_2_f,
 processor_x_2_f_dyn,
+processor_x_2_2_f,
+processor_x_2_2_f_dyn,
+processor_x_2_3_f,
+processor_x_2_3_f_dyn,
 
 stringToIntList,
 stringToIntList_dyn,
@@ -42,6 +46,7 @@ import qualified Data.Map as DMap
 --
 data Processor_data = Pd Dynamic  (Dynamic -> String) --deriving (Show)
 
+data MarkExtremums = Max|Min|Both deriving (Eq)
 
 eol_char = "\n"
 
@@ -187,7 +192,7 @@ processor_x_n n row = do
   let (first_n, bf_row_rest) = splitAt n               big_first
   let first_n_sorted_by_x    = sortBy  sortGt_by_x     first_n
 
-  let (next_n, bf_row_rest)  = splitAt n               bf_row_rest
+  let (next_n, bf_row_rest')  = splitAt n              bf_row_rest
   let next_n_sorted_by_x     = sortBy  sortGt_by_x     next_n
 
   -- assigned to parent extremums
@@ -201,9 +206,10 @@ processor_x_n n row = do
   let this_iteration = distances_to_falloff   ns_with_fall_offs
                                               assigned
 
-  this_iteration ++ step1   next_n_sorted_by_x
-                           bf_row_rest
+  let preliminary = first_n_sorted_by_x ++ this_iteration ++ step1   next_n_sorted_by_x
+                                             bf_row_rest'
 
+  sortBy  sortGt_by_x preliminary
 
  -- big_first
 
@@ -217,27 +223,32 @@ processor_x_n n row = do
   step1 :: [(Float, Float)] -> [(Float, Float)] -> [(Float, Float)]
   step1 [] _ = []
   step1 _ [] = []
-  step1 ps bf = do
+  step1 ps bf
+    -- |n > length bf = do
 
-    let (next_n, bf_row_rest)  = splitAt  n               bf
-    let next_n_sorted_by_x     = sortBy   sortGt_by_x     next_n
+    |otherwise = do
 
-
-    -- assigned to parent extremums
-    let assigned               = break_to_n   ps
-                                              next_n_sorted_by_x
+        let (next_n, bf_row_rest)  = splitAt  n               bf
+        let next_n_sorted_by_x     = sortBy   sortGt_by_x     next_n
 
 
-    let ns_with_fall_offs      = falloff     leftmost
-                                             rightmost
-                                             ps
+        -- assigned to parent extremums
+        let assigned               = break_to_n   ps
+                                                  next_n_sorted_by_x
 
 
-    let this_iteration = distances_to_falloff   ns_with_fall_offs
-                                                assigned
+        let ns_with_fall_offs      = falloff     leftmost
+                                                 rightmost
+                                                 ps
 
-    this_iteration ++ step1   next_n_sorted_by_x
-                             bf_row_rest
+
+        let this_iteration = distances_to_falloff   ns_with_fall_offs
+                                                    assigned
+
+        --next_n_sorted_by_x ++ --
+        this_iteration ++
+         step1   next_n_sorted_by_x
+                                 bf_row_rest
 
     -- []
   --------------------------------------------------------------------------------------------------
@@ -255,7 +266,7 @@ processor_x_n n row = do
     m1 = m lx ly x y
     b1 = b lx ly m1
     m2 = m x y rx ry
-    b2 = b x y m1
+    b2 = b x y m2
 
     f1 = (m1, b1)
     f2 = (m2, b2)
@@ -266,9 +277,9 @@ processor_x_n n row = do
   distance_to_falloff :: (Float, Float, (Float, Float), (Float, Float)) -> (Float, Float) ->
                                                                            (Float, Float)
   distance_to_falloff (px, py, (m1, b1), (m2, b2)) (nx, ny)
-    |px < nx = (px, d nx ny m1 b1)
-    |px > nx = (px, d nx ny m2 b2)
-    |px == nx = (px, d nx ny 0 py)
+    |px < nx = (nx, d nx ny m1 b1)
+    |px > nx = (nx, d nx ny m2 b2)
+    |px == nx = (nx, d nx ny 0 py)
     |otherwise = (nx, ny)
     where
     d x y m b = (abs (y - m*x -b))/(sqrt (m^2 +1))
@@ -297,7 +308,7 @@ processor_x_n n row = do
      delimeters ((x, _):(xn, _):rest) =  ((xn - x)/2 ):(delimeters rest)
 
      in_range :: Float -> (Float, Float) -> Bool
-     in_range lim (x, y) = x <= lim
+     in_range lim (x, _) = x <= lim
 
      step1 :: [Float] -> [(Float, Float)] -> [[(Float, Float)]]
      step1 [] row = [row]
@@ -307,7 +318,7 @@ processor_x_n n row = do
 {-- ================================================================================================
 ================================================================================================ --}
 processor_x_2_f :: [(Float, Float)] -> [(Float, Float)]
-processor_x_2_f row =  processor_x_n 2 row
+processor_x_2_f row =  processor_x_n 2 $ mark_extremums Max row
 ----------------------------------------------------------------------------------------------------
 
 {-- ================================================================================================
@@ -318,6 +329,47 @@ processor_x_2_f_dyn  row =map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z 
                       processor_x_2_f $
                       map (\(x, y) -> ((fromDyn x 0):: Float  , (fromDyn y 0):: Float )) row
 ----------------------------------------------------------------------------------------------------
+
+
+
+{-- ================================================================================================
+================================================================================================ --}
+processor_x_2_2_f :: [(Float, Float)] -> [(Float, Float)]
+processor_x_2_2_f row =  processor_x_n 2 $
+                         mark_extremums Max $
+                         processor_x_n 2 $ mark_extremums Max row
+----------------------------------------------------------------------------------------------------
+
+{-- ================================================================================================
+================================================================================================ --}
+processor_x_2_2_f_dyn :: [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)]
+processor_x_2_2_f_dyn  row =map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0:: Float) ),
+                                      Pd (toDyn y) (show . \z -> fromDyn z (0:: Float) ) )) $
+                      processor_x_2_2_f $
+                      map (\(x, y) -> ((fromDyn x 0):: Float  , (fromDyn y 0):: Float )) row
+----------------------------------------------------------------------------------------------------
+
+
+{-- ================================================================================================
+================================================================================================ --}
+processor_x_2_3_f :: [(Float, Float)] -> [(Float, Float)]
+processor_x_2_3_f row =  processor_x_n 2 $
+                         mark_extremums Max $
+                         processor_x_n 2 $
+                         mark_extremums Max $
+                         processor_x_n 2 $ mark_extremums Max row
+----------------------------------------------------------------------------------------------------
+
+{-- ================================================================================================
+================================================================================================ --}
+processor_x_2_3_f_dyn :: [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)]
+processor_x_2_3_f_dyn  row =map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0:: Float) ),
+                                      Pd (toDyn y) (show . \z -> fromDyn z (0:: Float) ) )) $
+                      processor_x_2_3_f $
+                      map (\(x, y) -> ((fromDyn x 0):: Float  , (fromDyn y 0):: Float )) row
+----------------------------------------------------------------------------------------------------
+
+
 ----------------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------
 
@@ -334,7 +386,7 @@ processor_x_2_f_dyn  row =map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z 
 distance_between_extremums_f :: [(Float, Float)] -> [(Float, Float)]
 distance_between_extremums_f  [] = []
 distance_between_extremums_f  row@((x_prev, _):_) = --step2 row step1_
-                                                    step1 $ mark_extremums row
+                                                    step1 $ mark_extremums Both row
 
      where
         step1 :: [(Float, Float)] -> [(Float, Float)]
@@ -346,7 +398,7 @@ distance_between_extremums_f  row@((x_prev, _):_) = --step2 row step1_
               dist = abs(x_prev-x_curr)
 
         step1_ = step1 mark_extremums_          --- !!! shortcut
-        mark_extremums_ = mark_extremums row    --- !!! shortcut
+        mark_extremums_ = mark_extremums Both row    --- !!! shortcut
 
 {--    |
        |
@@ -367,7 +419,7 @@ distance_between_extremums_f_dyn  row =
 ================================================================================================ --}
 extremums_f :: [(Float, Float)] -> [(Float, Float)]
 extremums_f [] = []
-extremums_f input =  mark_extremums input
+extremums_f input =  mark_extremums Both input
                      --step2 input $ mark_extremums input
 
 {--    |
@@ -388,10 +440,13 @@ extremums_f_dyn  row =map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0::
 
 {-- ================================================================================================
 ================================================================================================ --}
-mark_extremums :: [(Float, Float)] -> [(Float, Float)]
-mark_extremums [] = []
-mark_extremums (_:[]) = []
-mark_extremums input@(prev@(x_prev, y_prev):curr@(x_curr, y_curr):rest) = step2 $ step1 input
+mark_extremums :: MarkExtremums -> [(Float, Float)] -> [(Float, Float)]
+mark_extremums _ [] = []
+mark_extremums _ (_:[]) = []
+mark_extremums variant input@(prev@(x_prev, y_prev):curr@(x_curr, y_curr):rest)
+  |variant == Max = step2max $ step1 input
+  |variant == Min = step2min $ step1 input
+  |otherwise= step2Both $ step1 input
    where
     up :: Float -> Float -> Float -> Bool
     up yp yc yn= (yp < yc) && (yn < yc)
@@ -416,13 +471,29 @@ mark_extremums input@(prev@(x_prev, y_prev):curr@(x_curr, y_curr):rest) = step2 
         |otherwise = (step1 $ curr:rest)
 
     -- find extremums
-    step2 :: [(Float, Float)] -> [(Float, Float)]
-    step2 [] = []
-    step2 (_:_:[]) = []
-    step2 (prev@(x_prev, y_prev):curr@(x_curr, y_curr):next@(x_next, y_next):rest)
-        |up y_prev y_curr y_next = curr:(step2 $ curr:next:rest)
-        |down y_prev y_curr y_next = curr:(step2 $ curr:next:rest)
-        |otherwise = step2 $ curr:next:rest
+    step2Both :: [(Float, Float)] -> [(Float, Float)]
+    step2Both [] = []
+    step2Both (_:_:[]) = []
+    step2Both (prev@(x_prev, y_prev):curr@(x_curr, y_curr):next@(x_next, y_next):rest)
+        |up y_prev y_curr y_next = curr:(step2Both $ curr:next:rest)
+        |down y_prev y_curr y_next = curr:(step2Both $ curr:next:rest)
+        |otherwise = step2Both $ curr:next:rest
+
+    step2max :: [(Float, Float)] -> [(Float, Float)]
+    step2max [] = []
+    step2max (_:_:[]) = []
+    step2max (prev@(x_prev, y_prev):curr@(x_curr, y_curr):next@(x_next, y_next):rest)
+        |up y_prev y_curr y_next = curr:(step2max $ curr:next:rest)
+       -- |down y_prev y_curr y_next = curr:(step2max $ curr:next:rest)
+        |otherwise = step2max $ curr:next:rest
+
+    step2min :: [(Float, Float)] -> [(Float, Float)]
+    step2min [] = []
+    step2min (_:_:[]) = []
+    step2min (prev@(x_prev, y_prev):curr@(x_curr, y_curr):next@(x_next, y_next):rest)
+       -- |up y_prev y_curr y_next = curr:(step2min $ curr:next:rest)
+        |down y_prev y_curr y_next = curr:(step2min $ curr:next:rest)
+        |otherwise = step2min $ curr:next:rest
 
 
     get_middle :: Float -> Float -> Float

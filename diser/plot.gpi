@@ -3,4 +3,4 @@ set terminal jpeg medium size 1280,511
 set yrange [0:255]
 set xrange [0:400]
 #set multiplot
-plot '-' using 1:2 title "My Plot 1" with lines , '-' using 3:4 title "My Plot 2" with lines#, '-' using 5:6 title "My Plot 3" with lines
+plot '-' using 1:2 title "My Plot 1" with lines , '-' using 3:4 title "My Plot 2" with lines, '-' using 5:6 title "My Plot 3" with lines, '-' using 7:8 title "My Plot 4" with lines
