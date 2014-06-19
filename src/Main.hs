@@ -374,6 +374,9 @@ routine args
             |processor_x_2_f_processor' proc = processor_x_2_f_dyn:(step2 rest)
             |processor_x_2_2_f_processor' proc = processor_x_2_2_f_dyn:(step2 rest)
             |processor_x_2_3_f_processor' proc = processor_x_2_3_f_dyn:(step2 rest)
+            |processor_xm_2_f_processor' proc = processor_xm_2_f_dyn:(step2 rest)
+            |processor_xm_2_2_f_processor' proc = processor_xm_2_2_f_dyn:(step2 rest)
+            |processor_xm_2_3_f_processor' proc = processor_xm_2_3_f_dyn:(step2 rest)
             |otherwise = step2 rest
 
 

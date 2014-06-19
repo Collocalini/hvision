@@ -35,6 +35,10 @@ processor_x_2_f_processor',
 processor_x_2_2_f_processor',
 processor_x_2_3_f_processor',
 
+processor_xm_2_f_processor',
+processor_xm_2_2_f_processor',
+processor_xm_2_3_f_processor',
+
 flags ,
 
 options,
@@ -128,6 +132,23 @@ processor_x_2_2_f_processor' str
 processor_x_2_3_f_processor' :: String -> Bool
 processor_x_2_3_f_processor' str
    |"processor_x_2_3_f" == str = True
+   |otherwise = False
+
+
+processor_xm_2_f_processor' :: String -> Bool
+processor_xm_2_f_processor' str
+   |"processor_xm_2_f" == str = True
+   |otherwise = False
+
+
+processor_xm_2_2_f_processor' :: String -> Bool
+processor_xm_2_2_f_processor' str
+   |"processor_xm_2_2_f" == str = True
+   |otherwise = False
+
+processor_xm_2_3_f_processor' :: String -> Bool
+processor_xm_2_3_f_processor' str
+   |"processor_xm_2_3_f" == str = True
    |otherwise = False
 
 flags = [
