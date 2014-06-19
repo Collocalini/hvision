@@ -12,6 +12,7 @@ argument_data_bypass_mode ,
 argument_data_process,
 argument_use_columns,
 argument_repeat_frames_of_output,
+argument_matrix_stacking,
 
 default_data_file,
 default_single_data_file,
@@ -24,6 +25,7 @@ default_data_bypass_mode,
 default_data_process,
 default_use_columns,
 default_repeat_frames_of_output,
+default_matrix_stacking,
 
 identity_i_processor',
 identity_f_processor',
@@ -66,6 +68,7 @@ argument_data_bypass_mode = "data-bypass-mode"
 argument_data_process = "data-process"
 argument_use_columns = "use-columns"
 argument_repeat_frames_of_output = "repeat-frames-of-output"
+argument_matrix_stacking = "matrix-stacking"
 
 default_data_file = "data"
 default_single_data_file = "false"
@@ -78,7 +81,7 @@ default_data_process = "-"
 default_use_columns = "1:2"
 default_data_from_stdin = "-"
 default_repeat_frames_of_output = "1"
-
+default_matrix_stacking = "false"
 
 
 
@@ -154,7 +157,8 @@ processor_xm_2_3_f_processor' str
 flags = [
          argument_test,
          argument_data_bypass_mode,
-         argument_single_data_file
+         argument_single_data_file,
+         argument_matrix_stacking
         ]
 
 options =  [
@@ -183,7 +187,8 @@ tag_DMap [] = DMap.fromList [
         (argument_data_process ,           default_data_process),
         (argument_use_columns,             default_use_columns),
         (argument_data_from_stdin,         default_data_from_stdin),
-        (argument_repeat_frames_of_output, default_repeat_frames_of_output)
+        (argument_repeat_frames_of_output, default_repeat_frames_of_output),
+        (argument_matrix_stacking,         default_matrix_stacking)
    ]----]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]
 
 tag_DMap lst = DMap.union (DMap.fromList $ map (\(Just x) -> x) $ list_arguments lst) $

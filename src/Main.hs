@@ -232,6 +232,55 @@ data_process_range_sensitive tag_DMap range processor adaptTo adaptFrom = (data_
 
 
 
+
+{-- common steps in data_processMultipage_fromStdin_matrix_output
+===============================================================================================  --}
+data_process_common_matrix_output :: DMap.Map String String ->
+                                [([(Dynamic, Dynamic)] -> [ (Processor_data, Processor_data) ])] ->
+                                (String -> [(Dynamic, Dynamic)] ) ->
+                                [String] -> -- input
+                                IO ()
+data_process_common_matrix_output tag_DMap processors adaptTo x = iterate_all_data tag_DMap $
+      [toStringTable_matrix $ stack_output_matrix $ map ((apply_processors (processors)) . adaptTo) x]
+
+----------------------------------------------------------------------------------------------------
+
+
+{-- process and pass data to gnuplot +=============================================================
+================================================================================================ --}
+
+data_processMultipage_fromStdin_matrix_output :: DMap.Map String String -> [Int] ->
+                                [([(Dynamic, Dynamic)] -> [ (Processor_data, Processor_data) ])] ->
+                                (String -> [(Dynamic, Dynamic)] ) ->
+                                ([String] -> [String]) ->
+                                Consumer [String] IO ()
+data_processMultipage_fromStdin_matrix_output  tag_DMap [] processors adaptTo prepare_input =
+    forever $ (await) >>=
+    \x -> lift $ data_process_common_matrix_output tag_DMap processors adaptTo $ prepare_input x
+--------------------------------------------------------
+
+
+{-- process and pass data to gnuplot +=============================================================
+================================================================================================ --}
+
+data_processMultipage_matrix_output :: DMap.Map String String -> [Int] ->
+                                [([(Dynamic, Dynamic)] -> [ (Processor_data, Processor_data) ])] ->
+                                (String -> [(Dynamic, Dynamic)] ) ->
+                                ([String] -> [String]) ->
+                                IO ()
+data_processMultipage_matrix_output  tag_DMap [] processors adaptTo prepare_input =
+    (data_file' $ data_file tag_DMap) >>= \x -> data_process_common_matrix_output tag_DMap processors
+                                                                           adaptTo $ prepare_input x
+
+data_processMultipage_matrix_output tag_DMap range processors adaptTo prepare_input = (data_file' $
+   data_file_range tag_DMap range) >>= \x -> data_process_common_matrix_output tag_DMap processors
+                                                                           adaptTo $ prepare_input x
+----------------------------------------------------------------------------------------------------
+
+
+
+
+
 {-- ================================================================================================
 ================================================================================================ --}
 get_demanded_processors :: String -> [String]
@@ -305,6 +354,12 @@ routine args
                                                  argument_data_from_stdin $ tag_DMap') = True
         |otherwise = False
 
+     matrix_stacking_required :: Bool
+     matrix_stacking_required
+        |default_matrix_stacking /= (DMap.findWithDefault default_matrix_stacking
+                                                 argument_matrix_stacking $ tag_DMap') = True
+        |otherwise = False
+
 
      is_for_bypass :: Bool
      is_for_bypass
@@ -321,30 +376,12 @@ routine args
 
 
      do_processing
-        |is_multipage = data_processMultipage tag_DMap' range
-                       (
-                       recognizeDemanded_processors $
-                       get_demanded_processors
-                       (DMap.findWithDefault default_data_process argument_data_process tag_DMap')
-                       )
-                       (stringToFloatList_mn_dyn column_m column_n)
-                       (weed_data_from_input  $ read
-                                                   (DMap.findWithDefault default_multipage_data_file
-                                                           argument_multipage_data_file $ tag_DMap')
-                       )
+        |is_multipage && (not matrix_stacking_required)  = multipageDefault
+        |is_multipage && matrix_stacking_required      = multipageMatrixStacking
 
-        |is_from_stdin = runEffect $ P.stdinLn >-> (wait_for_piece_of_data []) >->
-                     data_processMultipage_fromStdin tag_DMap' range
-                       (
-                       recognizeDemanded_processors $
-                       get_demanded_processors
-                       (DMap.findWithDefault default_data_process argument_data_process tag_DMap')
-                       )
-                       (stringToFloatList_mn_dyn column_m column_n)
-                       (weed_data_from_input  $ read
-                                                   (DMap.findWithDefault default_data_from_stdin
-                                                           argument_data_from_stdin $ tag_DMap')
-                       )
+        |is_from_stdin && (not matrix_stacking_required) = stdInDefault
+        |is_from_stdin && matrix_stacking_required     = stdInMatrixStacking
+
 
         |otherwise = data_processM tag_DMap' range
                        (
@@ -380,7 +417,57 @@ routine args
             |otherwise = step2 rest
 
 
+     multipageDefault = data_processMultipage tag_DMap' range
+                       (
+                       recognizeDemanded_processors $
+                       get_demanded_processors
+                       (DMap.findWithDefault default_data_process argument_data_process tag_DMap')
+                       )
+                       (stringToFloatList_mn_dyn column_m column_n)
+                       (weed_data_from_input  $ read
+                                                   (DMap.findWithDefault default_multipage_data_file
+                                                           argument_multipage_data_file $ tag_DMap')
+                       )
 
+     multipageMatrixStacking =  data_processMultipage_matrix_output tag_DMap' range
+                       (
+                       recognizeDemanded_processors $
+                       get_demanded_processors
+                       (DMap.findWithDefault default_data_process argument_data_process tag_DMap')
+                       )
+                       (stringToFloatList_mn_dyn column_m column_n)
+                       (weed_data_from_input  $ read
+                                                   (DMap.findWithDefault default_multipage_data_file
+                                                           argument_multipage_data_file $ tag_DMap')
+                       )
+
+
+     stdInDefault = runEffect $ P.stdinLn >-> (wait_for_piece_of_data []) >->
+                     data_processMultipage_fromStdin tag_DMap' range
+                       (
+                       recognizeDemanded_processors $
+                       get_demanded_processors
+                       (DMap.findWithDefault default_data_process argument_data_process tag_DMap')
+                       )
+                       (stringToFloatList_mn_dyn column_m column_n)
+                       (weed_data_from_input  $ read
+                                                   (DMap.findWithDefault default_data_from_stdin
+                                                           argument_data_from_stdin $ tag_DMap')
+                       )
+
+     stdInMatrixStacking =
+                     runEffect $ P.stdinLn >-> (wait_for_piece_of_data []) >->
+                     data_processMultipage_fromStdin_matrix_output tag_DMap' range
+                       (
+                       recognizeDemanded_processors $
+                       get_demanded_processors
+                       (DMap.findWithDefault default_data_process argument_data_process tag_DMap')
+                       )
+                       (stringToFloatList_mn_dyn column_m column_n)
+                       (weed_data_from_input  $ read
+                                                   (DMap.findWithDefault default_data_from_stdin
+                                                           argument_data_from_stdin $ tag_DMap')
+                       )
 
 -----end of peculier section
 

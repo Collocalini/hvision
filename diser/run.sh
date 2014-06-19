@@ -4,6 +4,97 @@
 #./diser --gnuplot-file plot.gpi --range-of-files 1..1000 --data-bypass-mode --data-file /home/hokum/Documents/pixels_to_signals/sda3/temp/new_Automatic_Traffic_Surveillance.avi/data_files/data |gnuplot -persist|ffmpeg -f mjpeg -i pipe: -f avi -vcodec copy -s 640x480 pipe:|mplayer -profile prof3 -
 #./diser --gnuplot-file plot.gpi --range-of-files 1..1000 --data-process identity --data-file /home/hokum/Documents/pixels_to_signals/sda3/temp/new_Automatic_Traffic_Surveillance.avi/data_files/data |gnuplot -persist|ffmpeg -f mjpeg -i pipe: -f avi -vcodec copy -s 640x480 pipe:|mplayer -profile prof3 -
 
+diser --gnuplot-file plot.gpi \
+        --data-process identity_f\
+        --use-columns 1:2 \
+        --data-file xxx \
+        --multipage-data-file 3 \
+        --matrix-stacking \
+        > identity_f.plot
+
+cat identity_f.plot |gnuplot -persist > identity_f.jpg
+
+
+diser --gnuplot-file plot.gpi \
+        --data-process extremums_f\
+        --use-columns 1:2 \
+        --data-file xxx \
+        --multipage-data-file 3 \
+        --matrix-stacking \
+        > extremums_f.plot
+
+cat extremums_f.plot |gnuplot -persist > extremums_f.jpg
+
+
+
+
+diser --gnuplot-file plot.gpi \
+        --data-process processor_x_2_f\
+        --use-columns 1:2 \
+        --data-file xxx \
+        --multipage-data-file 3 \
+        --matrix-stacking \
+        > processor_x_2_f.plot
+
+cat processor_x_2_f.plot |gnuplot -persist > processor_x_2_f.jpg
+
+
+diser --gnuplot-file plot.gpi \
+        --data-process processor_x_2_2_f\
+        --use-columns 1:2 \
+        --data-file xxx \
+        --multipage-data-file 3 \
+        --matrix-stacking \
+        > processor_x_2_2_f.plot
+
+cat processor_x_2_2_f.plot |gnuplot -persist > processor_x_2_2_f.jpg
+
+
+diser --gnuplot-file plot.gpi \
+        --data-process processor_x_2_3_f\
+        --use-columns 1:2 \
+        --data-file xxx \
+        --multipage-data-file 3 \
+        --matrix-stacking \
+        > processor_x_2_3_f.plot
+
+cat processor_x_2_3_f.plot |gnuplot -persist > processor_x_2_3_f.jpg
+
+
+diser --gnuplot-file plot.gpi \
+        --data-process processor_xm_2_f\
+        --use-columns 1:2 \
+        --data-file xxx \
+        --multipage-data-file 3 \
+        --matrix-stacking \
+        > processor_xm_2_f.plot
+
+cat processor_xm_2_f.plot |gnuplot -persist > processor_xm_2_f.jpg
+
+
+
+diser --gnuplot-file plot.gpi \
+        --data-process processor_xm_2_2_f\
+        --use-columns 1:2 \
+        --data-file xxx \
+        --multipage-data-file 3 \
+        --matrix-stacking \
+        > processor_xm_2_2_f.plot
+
+cat processor_xm_2_2_f.plot |gnuplot -persist > processor_xm_2_2_f.jpg
+
+diser --gnuplot-file plot.gpi \
+        --data-process processor_xm_2_3_f\
+        --use-columns 1:2 \
+        --data-file xxx \
+        --multipage-data-file 3 \
+        --matrix-stacking \
+        > processor_xm_2_3_f.plot
+
+cat processor_xm_2_3_f.plot |gnuplot -persist > processor_xm_2_3_f.jpg
+
+
+: << 'xxx'
 cat xxx |diser --gnuplot-file plot.gpi \
         --data-process extremums_f,processor_x_2_f,processor_x_2_2_f,processor_x_2_3_f,processor_xm_2_f,processor_xm_2_2_f,processor_xm_2_3_f\
         --use-columns 1:2 \
@@ -12,7 +103,7 @@ cat xxx |diser --gnuplot-file plot.gpi \
         #|gnuplot -persist \
         #|ffmpeg -f mjpeg -i pipe: -f avi -vcodec copy -y -s 1280x511 avi4
 
-: << 'xxx'
+
 ./diser --gnuplot-file plot.gpi \
         --data-process identity_f,derivative_f \
         --use-columns 1:2 \

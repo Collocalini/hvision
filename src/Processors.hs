@@ -41,7 +41,9 @@ intListToString_2to3,
 floatListToString_2to3,
 apply_processors,
 stack_output,
+stack_output_matrix,
 toStringTable,
+toStringTable_matrix,
 Processor_data,
 
 ) where
@@ -354,7 +356,7 @@ processor_x_n n row = do
 {-- ================================================================================================
 ================================================================================================ --}
 processor_x_2_f :: [(Float, Float)] -> [(Float, Float)]
-processor_x_2_f row = head_repeats row $
+processor_x_2_f row = --head_repeats row $
                       processor_x_n 2 $ mark_extremums Max row
   where
 
@@ -374,7 +376,7 @@ processor_x_2_f_dyn  row =map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z 
 {-- ================================================================================================
 ================================================================================================ --}
 processor_x_2_2_f :: [(Float, Float)] -> [(Float, Float)]
-processor_x_2_2_f row =  head_repeats row $
+processor_x_2_2_f row =  --head_repeats row $
                          processor_x_n 2 $
                          mark_extremums Max $
                          processor_x_n 2 $ mark_extremums Max row
@@ -393,7 +395,7 @@ processor_x_2_2_f_dyn  row =map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn 
 {-- ================================================================================================
 ================================================================================================ --}
 processor_x_2_3_f :: [(Float, Float)] -> [(Float, Float)]
-processor_x_2_3_f row =  head_repeats row $
+processor_x_2_3_f row =  --head_repeats row $
                          processor_x_n 2 $
                          mark_extremums Max $
                          processor_x_n 2 $
@@ -418,7 +420,7 @@ processor_x_2_3_f_dyn  row =map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn 
 {-- ================================================================================================
 ================================================================================================ --}
 processor_xm_2_f :: [(Float, Float)] -> [(Float, Float)]
-processor_xm_2_f row =  head_repeats row $
+processor_xm_2_f row =  --head_repeats row $
                         processor_x_n 2 $ mark_extremums Min row
 ----------------------------------------------------------------------------------------------------
 
@@ -436,7 +438,7 @@ processor_xm_2_f_dyn  row =map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z
 {-- ================================================================================================
 ================================================================================================ --}
 processor_xm_2_2_f :: [(Float, Float)] -> [(Float, Float)]
-processor_xm_2_2_f row = head_repeats row $
+processor_xm_2_2_f row = --head_repeats row $
                          processor_x_n 2 $
                          mark_extremums Min $
                          processor_x_n 2 $ mark_extremums Min row
@@ -455,7 +457,7 @@ processor_xm_2_2_f_dyn  row =map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn
 {-- ================================================================================================
 ================================================================================================ --}
 processor_xm_2_3_f :: [(Float, Float)] -> [(Float, Float)]
-processor_xm_2_3_f row = head_repeats row $
+processor_xm_2_3_f row = --head_repeats row $
                          processor_x_n 2 $
                          mark_extremums Min $
                          processor_x_n 2 $
@@ -523,7 +525,7 @@ distance_between_extremums_f_dyn  row =
 ================================================================================================ --}
 extremums_f :: [(Float, Float)] -> [(Float, Float)]
 extremums_f [] = []
-extremums_f input =  head_repeats input $
+extremums_f input =  --head_repeats input $
                      mark_extremums Both input
                      --step2 input $ mark_extremums input
 
@@ -692,6 +694,38 @@ stack_output_each_xy (data_ : rest ) = (\(x, y) -> x:y:(stack_output_each_xy res
 
 {-- ================================================================================================
 ================================================================================================ --}
+stack_output_matrix :: [[[ (Processor_data, Processor_data) ]]] ->
+                       [[[(Processor_data, Processor_data, Processor_data)]]]
+stack_output_matrix [] = []
+stack_output_matrix input = step1 0 input
+                               --(step1 data_) ++ (stack_output_matrix rest)
+                                --(\(x, y) -> x:y:(step1 rest) ) $ unzip data_
+    where
+    step1 :: Int -> [[[ (Processor_data, Processor_data) ]]] ->
+                    [[[(Processor_data, Processor_data, Processor_data)]]]
+    step1 _ [] = []
+    step1 i (d_ : r ) = (step2 i d_) : (step1 (i+1) r)
+      where
+      step2 :: Int -> [[ (Processor_data, Processor_data) ]] ->
+               [[(Processor_data, Processor_data, Processor_data)]]
+      step2 _ [] = []
+      step2 i' (data_ : rest ) = (map (step3 i'') data_):(step2 i' rest)
+        where
+          --i'= replicate (length data_) $ Pd (toDyn i) (show . \z -> fromDyn z (0:: Int))
+          i''= Pd (toDyn i') (show . \z -> fromDyn z (0:: Int))
+
+      step3 :: Processor_data ->
+               (Processor_data, Processor_data) ->
+               (Processor_data, Processor_data, Processor_data)
+      step3 y (x,z) = (x,y,z)
+----------------------------------------------------------------------------------------------------
+
+
+
+
+
+{-- ================================================================================================
+================================================================================================ --}
 toStringTable :: [[Processor_data]] -> String
 toStringTable [] = []
 toStringTable [[]] = []
@@ -708,6 +742,39 @@ toStringTable data_@(left: rest) = unlines $ step_join
       step2 :: [[Processor_data]] -> [String]
       step2 [] = []
       step2 (left : rest) = step_join (map (\(Pd d f) -> f d) left) $ step2 rest
+----------------------------------------------------------------------------------------------------
+
+
+
+{-- ================================================================================================
+================================================================================================ --}
+toStringTable_matrix :: [[[(Processor_data, Processor_data, Processor_data)]]] -> String
+toStringTable_matrix [] = []
+toStringTable_matrix [[]] = []
+toStringTable_matrix data_ = allFramess data_
+   where
+   toStrings :: (Processor_data, Processor_data, Processor_data) ->
+                (String, String, String)
+   toStrings (x,y,z) = ( (\(Pd d f) -> f d) x, (\(Pd d f) -> f d) y, (\(Pd d f) -> f d) z)
+
+   toSingleLine :: (String, String, String) -> String
+   toSingleLine (x,y,z) = unwords [x, y, z]
+
+   {--toSingleProcessor ::  [String] -> String
+   toSingleProcessor s = unlines s
+
+   toSingleY ::  [String] -> String
+   toSingleY s = unlines s--}
+
+   processor :: [(Processor_data, Processor_data, Processor_data)] -> String
+   processor p = unlines $ map (toSingleLine.toStrings) p
+
+   allProcessors :: [[(Processor_data, Processor_data, Processor_data)]] -> String
+   allProcessors  pp = concat $ map processor pp
+
+   allFramess :: [[[(Processor_data, Processor_data, Processor_data)]]] -> String
+   allFramess f = --unlines $ map ((eol_char ++) . allProcessors) f
+                  unlines $ map (allProcessors) f
 ----------------------------------------------------------------------------------------------------
 
 
