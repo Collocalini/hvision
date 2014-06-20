@@ -4,6 +4,57 @@
 #./diser --gnuplot-file plot.gpi --range-of-files 1..1000 --data-bypass-mode --data-file /home/hokum/Documents/pixels_to_signals/sda3/temp/new_Automatic_Traffic_Surveillance.avi/data_files/data |gnuplot -persist|ffmpeg -f mjpeg -i pipe: -f avi -vcodec copy -s 640x480 pipe:|mplayer -profile prof3 -
 #./diser --gnuplot-file plot.gpi --range-of-files 1..1000 --data-process identity --data-file /home/hokum/Documents/pixels_to_signals/sda3/temp/new_Automatic_Traffic_Surveillance.avi/data_files/data |gnuplot -persist|ffmpeg -f mjpeg -i pipe: -f avi -vcodec copy -s 640x480 pipe:|mplayer -profile prof3 -
 
+
+diser --gnuplot-file plot.gpi \
+        --data-process max_derivative_in_range_xy_f\
+        --use-columns 1:2 \
+        --data-file xxx \
+        --multipage-data-file 3 \
+        --matrix-stacking \
+        > max_derivative_in_range_xy_f.plot
+
+cat max_derivative_in_range_xy_f.plot |gnuplot -persist > max_derivative_in_range_xy_f.jpg
+
+
+diser --gnuplot-file plot.gpi \
+        --data-process min_derivative_in_range_xy_f\
+        --use-columns 1:2 \
+        --data-file xxx \
+        --multipage-data-file 3 \
+        --matrix-stacking \
+        > min_derivative_in_range_xy_f.plot
+
+cat min_derivative_in_range_xy_f.plot |gnuplot -persist > min_derivative_in_range_xy_f.jpg
+
+: << 'xxx'
+diser --gnuplot-file plot.gpi \
+        --data-process distance_between_extremums_f\
+        --use-columns 1:2 \
+        --data-file xxx \
+        --multipage-data-file 3 \
+        --matrix-stacking \
+        > distance_between_extremums_f.plot
+
+cat distance_between_extremums_f.plot |gnuplot -persist > distance_between_extremums_f.jpg
+
+
+
+
+diser --gnuplot-file plot.gpi \
+        --data-process derivative_f\
+        --use-columns 1:2 \
+        --data-file xxx \
+        --multipage-data-file 3 \
+        --matrix-stacking \
+        > derivative_f.plot
+
+cat derivative_f.plot |gnuplot -persist > derivative_f.jpg
+
+
+
+
+
+
 diser --gnuplot-file plot.gpi \
         --data-process identity_f\
         --use-columns 1:2 \
@@ -94,7 +145,7 @@ diser --gnuplot-file plot.gpi \
 cat processor_xm_2_3_f.plot |gnuplot -persist > processor_xm_2_3_f.jpg
 
 
-: << 'xxx'
+
 cat xxx |diser --gnuplot-file plot.gpi \
         --data-process extremums_f,processor_x_2_f,processor_x_2_2_f,processor_x_2_3_f,processor_xm_2_f,processor_xm_2_2_f,processor_xm_2_3_f\
         --use-columns 1:2 \

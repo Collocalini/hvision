@@ -31,6 +31,8 @@ identity_i_processor',
 identity_f_processor',
 derivative_f_processor',
 derivative_i_processor',
+max_derivative_in_range_xy_f_processor',
+min_derivative_in_range_xy_f_processor',
 distance_between_extremums_f_processor',
 extremums_f_processor',
 processor_x_2_f_processor',
@@ -107,6 +109,18 @@ derivative_f_processor' str
 derivative_i_processor' :: String -> Bool
 derivative_i_processor' str
    |"derivative_i" == str = True
+   |otherwise = False
+
+
+max_derivative_in_range_xy_f_processor' :: String -> Bool
+max_derivative_in_range_xy_f_processor' str
+   |"max_derivative_in_range_xy_f" == str = True
+   |otherwise = False
+
+
+min_derivative_in_range_xy_f_processor' :: String -> Bool
+min_derivative_in_range_xy_f_processor' str
+   |"min_derivative_in_range_xy_f" == str = True
    |otherwise = False
 
 

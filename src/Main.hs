@@ -405,6 +405,10 @@ routine args
             |identity_f_processor' proc = identity_f_dyn:(step2 rest)
             |derivative_f_processor' proc = derivative_f_dyn:(step2 rest)
             |derivative_i_processor' proc = derivative_i_dyn:(step2 rest)
+            |max_derivative_in_range_xy_f_processor' proc = max_derivative_in_range_xy_f_dyn:
+                                                                                        (step2 rest)
+            |min_derivative_in_range_xy_f_processor' proc = min_derivative_in_range_xy_f_dyn:
+                                                                                        (step2 rest)
             |distance_between_extremums_f_processor' proc = distance_between_extremums_f_dyn:
                                                                                         (step2 rest)
             |extremums_f_processor' proc = extremums_f_dyn:(step2 rest)

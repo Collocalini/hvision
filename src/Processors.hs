@@ -9,6 +9,8 @@ derivative_i,
 derivative_i_dyn,
 derivative_f,
 derivative_f_dyn,
+max_derivative_in_range_xy_f_dyn,
+min_derivative_in_range_xy_f_dyn,
 distance_between_extremums_f,
 distance_between_extremums_f_dyn,
 extremums_f,
@@ -157,29 +159,85 @@ derivative_f_dyn  row = map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0
 
 
 {-- ================================================================================================
+-- assumes that input is sorted by x in increasing order
 ================================================================================================ --}
-derivative_type1_f :: [(Float, Float)] -> [(Float, Float)]
-derivative_type1_f  [] = []
-derivative_type1_f  row@((x_prev, _):_) = (x_prev, 0):(step1 row)
+derivative_in_range_f :: Float -> Float -> MarkExtremums -> [(Float, Float)] -> [(Float, Float)]
+derivative_in_range_f _ _ _ [] = []
+derivative_in_range_f l r mode (fst:row) = step1 [] fst row
+   where
+   step1 :: [(Float, Float)] -> (Float, Float) -> [(Float, Float)] -> [(Float, Float)]
+   step1 [] (x,_)   []            = [(x,0)]
+   step1 [] (x,y)   ((x1,y1):[])  = [(x,0),(x1,y1-y)]
+   step1 p  c@(x,_) n@(next:[])   = step2 $ max_in_range (adjust_range l r c) $ p ++ n
      where
-        step1 :: [(Float, Float)] -> [(Float, Float)]
-        step1  [] = []
-        step1 (_:[]) = []
-        step1 ((x_prev, y_prev):rest) = ((\(x, y) -> (x_prev + ( (abs $ x - x_prev)/2),
-                                                  y-y_prev) ) $ head rest):(step1 $ rest)
+     step2 :: Maybe (Float, Float) -> [(Float, Float)]
+     step2 Nothing = step1 p next []
+     step2 (Just (_,y)) = (x,y):(step1 p next [])
+
+
+   step1 p c@(x,_) n@(next:rest)  = step2 $ max_in_range (adjust_range l r c) $ p ++ n
+     where
+     step2 :: Maybe (Float, Float) -> [(Float, Float)]
+     step2 Nothing = step1 p next rest
+     step2 (Just (_,y)) = (x,y):(step1 p next rest)
+
+
+   max_in_range :: (Float, Float) -> [(Float, Float)] -> Maybe (Float, Float)
+   max_in_range _ [] = Nothing
+   max_in_range (l',r') row' = step1' $ filter (\(x,_)-> (x>l' && x<r') ) row'
+
+      where
+      step1' :: [(Float, Float)] -> Maybe (Float, Float)
+      step1' [] = Nothing
+      step1' row''
+        |mode == Max = Just $ maximumBy sortGt_by_y row''
+        |otherwise  = Just $ minimumBy sortGt_by_y row''
+
+   adjust_range :: Float -> Float -> (Float, Float) -> (Float, Float)
+   adjust_range l' r' (x,_) = (x+l', x+r') -- NOT A TYPO!!!
+
 {--    |
        |
        |
        |
        V  --}
-derivative_type1_f_dyn :: [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)]
-derivative_type1_f_dyn  row = map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0:: Float) ),
+
+{-- ================================================================================================
+================================================================================================ --}
+max_derivative_in_range_xy_f :: [(Float, Float)] -> [(Float, Float)]
+max_derivative_in_range_xy_f row = derivative_in_range_f (-50) 50 Max $ derivative_f row
+                      --head_repeats row $
+                 --     max_derivative_in_range
+----------------------------------------------------------------------------------------------------
+
+
+max_derivative_in_range_xy_f_dyn :: [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)]
+max_derivative_in_range_xy_f_dyn  row = map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0:: Float) ),
                                       Pd (toDyn y) (show . \z -> fromDyn z (0:: Float) ) )) $
-                      derivative_f $
+                      max_derivative_in_range_xy_f $
                       map (\(x, y) -> ((fromDyn x 0):: Float , (fromDyn y 0):: Float )) row
 ---------------------------------------------------------------------
 
 
+
+
+{-- ================================================================================================
+================================================================================================ --}
+min_derivative_in_range_xy_f :: [(Float, Float)] -> [(Float, Float)]
+min_derivative_in_range_xy_f row = derivative_in_range_f (-50) 50 Min $ derivative_f row
+                      --head_repeats row $
+                 --     max_derivative_in_range
+----------------------------------------------------------------------------------------------------
+
+
+min_derivative_in_range_xy_f_dyn :: [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)]
+min_derivative_in_range_xy_f_dyn  row = map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0:: Float) ),
+                                      Pd (toDyn y) (show . \z -> fromDyn z (0:: Float) ) )) $
+                      min_derivative_in_range_xy_f $
+                      map (\(x, y) -> ((fromDyn x 0):: Float , (fromDyn y 0):: Float )) row
+---------------------------------------------------------------------
+
+--}
 
 
 
@@ -358,8 +416,6 @@ processor_x_n n row = do
 processor_x_2_f :: [(Float, Float)] -> [(Float, Float)]
 processor_x_2_f row = --head_repeats row $
                       processor_x_n 2 $ mark_extremums Max row
-  where
-
 ----------------------------------------------------------------------------------------------------
 
 {-- ================================================================================================
@@ -631,6 +687,16 @@ sortLt_by_y (_, ly) (_, ry)
   | ly > ry = LT
   | ly == ry = EQ
 ----------------------------------------------------------------------------------------------------
+
+
+{-- ================================================================================================
+================================================================================================ --}
+sortGt_by_y (_, ly) (_, ry)
+  | ly < ry = LT
+  | ly > ry = GT
+  | ly == ry = EQ
+----------------------------------------------------------------------------------------------------
+
 
 
 {-- ================================================================================================
