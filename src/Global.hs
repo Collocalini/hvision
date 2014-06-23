@@ -43,6 +43,8 @@ processor_xm_2_f_processor',
 processor_xm_2_2_f_processor',
 processor_xm_2_3_f_processor',
 
+frame_difference_sequence_processor',
+
 flags ,
 
 options,
@@ -71,6 +73,7 @@ argument_data_process = "data-process"
 argument_use_columns = "use-columns"
 argument_repeat_frames_of_output = "repeat-frames-of-output"
 argument_matrix_stacking = "matrix-stacking"
+
 
 default_data_file = "data"
 default_single_data_file = "false"
@@ -167,6 +170,13 @@ processor_xm_2_3_f_processor' :: String -> Bool
 processor_xm_2_3_f_processor' str
    |"processor_xm_2_3_f" == str = True
    |otherwise = False
+
+
+frame_difference_sequence_processor' :: String -> Bool
+frame_difference_sequence_processor' str
+   |"frame_difference_sequence_f" == str = True
+   |otherwise = False
+
 
 flags = [
          argument_test,

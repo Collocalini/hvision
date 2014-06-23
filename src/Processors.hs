@@ -29,6 +29,10 @@ processor_xm_2_2_f_dyn,
 processor_xm_2_3_f,
 processor_xm_2_3_f_dyn,
 
+frame_difference_f,
+frame_difference_sequence_f,
+frame_difference_sequence_f_dyn,
+
 stringToIntList,
 stringToIntList_dyn,
 intListToString,
@@ -42,10 +46,13 @@ stringToFloatList_mn_dyn,
 intListToString_2to3,
 floatListToString_2to3,
 apply_processors,
+apply_processors_context_sensitive,
 stack_output,
 stack_output_matrix,
+--stack_output_matrix_context,
 toStringTable,
 toStringTable_matrix,
+--toStringTable_matrix_context,
 Processor_data,
 
 ) where
@@ -212,15 +219,17 @@ max_derivative_in_range_xy_f row = derivative_in_range_f (-50) 50 Max $ derivati
 
 
 max_derivative_in_range_xy_f_dyn :: [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)]
-max_derivative_in_range_xy_f_dyn  row = map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0:: Float) ),
+max_derivative_in_range_xy_f_dyn  row =
+                     map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0:: Float) ),
                                       Pd (toDyn y) (show . \z -> fromDyn z (0:: Float) ) )) $
                       max_derivative_in_range_xy_f $
                       map (\(x, y) -> ((fromDyn x 0):: Float , (fromDyn y 0):: Float )) row
 ---------------------------------------------------------------------
-
-
-
-
+{--    |
+       |
+       |
+       |
+       V  --}
 {-- ================================================================================================
 ================================================================================================ --}
 min_derivative_in_range_xy_f :: [(Float, Float)] -> [(Float, Float)]
@@ -231,7 +240,8 @@ min_derivative_in_range_xy_f row = derivative_in_range_f (-50) 50 Min $ derivati
 
 
 min_derivative_in_range_xy_f_dyn :: [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)]
-min_derivative_in_range_xy_f_dyn  row = map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0:: Float) ),
+min_derivative_in_range_xy_f_dyn  row =
+                     map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0:: Float) ),
                                       Pd (toDyn y) (show . \z -> fromDyn z (0:: Float) ) )) $
                       min_derivative_in_range_xy_f $
                       map (\(x, y) -> ((fromDyn x 0):: Float , (fromDyn y 0):: Float )) row
@@ -409,15 +419,20 @@ processor_x_n n row = do
        xl      = [l .. px]
        xr      = [px .. r]
        f m b x = (x, m*x + b)
-
-
+----------------------------------------------------------------------------------------------------
+{--    |
+       |
+       |
+       |
+       V  --}
 {-- ================================================================================================
 ================================================================================================ --}
 processor_x_2_f :: [(Float, Float)] -> [(Float, Float)]
 processor_x_2_f row = --head_repeats row $
                       processor_x_n 2 $ mark_extremums Max row
 ----------------------------------------------------------------------------------------------------
-
+{--    |
+       V  --}
 {-- ================================================================================================
 ================================================================================================ --}
 processor_x_2_f_dyn :: [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)]
@@ -426,9 +441,8 @@ processor_x_2_f_dyn  row =map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z 
                       processor_x_2_f $
                       map (\(x, y) -> ((fromDyn x 0):: Float  , (fromDyn y 0):: Float )) row
 ----------------------------------------------------------------------------------------------------
-
-
-
+{--    |
+       V  --}
 {-- ================================================================================================
 ================================================================================================ --}
 processor_x_2_2_f :: [(Float, Float)] -> [(Float, Float)]
@@ -437,7 +451,8 @@ processor_x_2_2_f row =  --head_repeats row $
                          mark_extremums Max $
                          processor_x_n 2 $ mark_extremums Max row
 ----------------------------------------------------------------------------------------------------
-
+{--    |
+       V  --}
 {-- ================================================================================================
 ================================================================================================ --}
 processor_x_2_2_f_dyn :: [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)]
@@ -446,8 +461,8 @@ processor_x_2_2_f_dyn  row =map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn 
                       processor_x_2_2_f $
                       map (\(x, y) -> ((fromDyn x 0):: Float  , (fromDyn y 0):: Float )) row
 ----------------------------------------------------------------------------------------------------
-
-
+{--    |
+       V  --}
 {-- ================================================================================================
 ================================================================================================ --}
 processor_x_2_3_f :: [(Float, Float)] -> [(Float, Float)]
@@ -458,7 +473,8 @@ processor_x_2_3_f row =  --head_repeats row $
                          mark_extremums Max $
                          processor_x_n 2 $ mark_extremums Max row
 ----------------------------------------------------------------------------------------------------
-
+{--    |
+       V  --}
 {-- ================================================================================================
 ================================================================================================ --}
 processor_x_2_3_f_dyn :: [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)]
@@ -467,19 +483,19 @@ processor_x_2_3_f_dyn  row =map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn 
                       processor_x_2_3_f $
                       map (\(x, y) -> ((fromDyn x 0):: Float  , (fromDyn y 0):: Float )) row
 ----------------------------------------------------------------------------------------------------
-
-
-
-
-
-
+{--    |
+       |
+       |
+       |
+       V  --}
 {-- ================================================================================================
 ================================================================================================ --}
 processor_xm_2_f :: [(Float, Float)] -> [(Float, Float)]
 processor_xm_2_f row =  --head_repeats row $
                         processor_x_n 2 $ mark_extremums Min row
 ----------------------------------------------------------------------------------------------------
-
+{--    |
+       V  --}
 {-- ================================================================================================
 ================================================================================================ --}
 processor_xm_2_f_dyn :: [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)]
@@ -488,9 +504,8 @@ processor_xm_2_f_dyn  row =map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z
                       processor_xm_2_f $
                       map (\(x, y) -> ((fromDyn x 0):: Float  , (fromDyn y 0):: Float )) row
 ----------------------------------------------------------------------------------------------------
-
-
-
+{--    |
+       V  --}
 {-- ================================================================================================
 ================================================================================================ --}
 processor_xm_2_2_f :: [(Float, Float)] -> [(Float, Float)]
@@ -499,7 +514,8 @@ processor_xm_2_2_f row = --head_repeats row $
                          mark_extremums Min $
                          processor_x_n 2 $ mark_extremums Min row
 ----------------------------------------------------------------------------------------------------
-
+{--    |
+       V  --}
 {-- ================================================================================================
 ================================================================================================ --}
 processor_xm_2_2_f_dyn :: [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)]
@@ -508,8 +524,8 @@ processor_xm_2_2_f_dyn  row =map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn
                       processor_xm_2_2_f $
                       map (\(x, y) -> ((fromDyn x 0):: Float  , (fromDyn y 0):: Float )) row
 ----------------------------------------------------------------------------------------------------
-
-
+{--    |
+       V  --}
 {-- ================================================================================================
 ================================================================================================ --}
 processor_xm_2_3_f :: [(Float, Float)] -> [(Float, Float)]
@@ -520,7 +536,8 @@ processor_xm_2_3_f row = --head_repeats row $
                          mark_extremums Min $
                          processor_x_n 2 $ mark_extremums Min row
 ----------------------------------------------------------------------------------------------------
-
+{--    |
+       V  --}
 {-- ================================================================================================
 ================================================================================================ --}
 processor_xm_2_3_f_dyn :: [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)]
@@ -569,7 +586,7 @@ distance_between_extremums_f  row@((x_prev, _):_) = --step2 row step1_
        V  --}
 distance_between_extremums_f_dyn :: [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)]
 distance_between_extremums_f_dyn  row =
-                                 map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0:: Float) ),
+                     map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0:: Float) ),
                                       Pd (toDyn y) (show . \z -> fromDyn z (0:: Float) ) )) $
                       distance_between_extremums_f $
                       map (\(x, y) -> ((fromDyn x 0):: Float  , (fromDyn y 0):: Float )) row
@@ -669,6 +686,48 @@ mark_extremums variant input@(prev@(x_prev, y_prev):curr@(x_curr, y_curr):rest)
 
 
 
+{-- ================================================================================================
+================================================================================================ --}
+frame_difference_f :: [(Float, Float)] -> [(Float, Float)] -> [(Float, Float)]
+--frame_difference_f _ _ = [(0,0),(0,0),(0,0)]
+frame_difference_f [] _ = []
+frame_difference_f _ [] = []
+frame_difference_f ((x1,y1):rest1) ((x2,y2):rest2)
+   |x1 == x2   = (x1, y2-y1): frame_difference_f rest1 rest2
+   |otherwise = (x1, y2-y1):frame_difference_f rest1 rest2
+{--   --}
+----------------------------------------------------------------------------------------------------
+
+
+
+{-- ================================================================================================
+================================================================================================ --}
+frame_difference_sequence_f :: [[(Float, Float)]] -> [[(Float, Float)]]
+frame_difference_sequence_f [] = []
+frame_difference_sequence_f input = --[[(0,0),(0,0),(0,0)]]
+                                    step1 input
+   where
+   step1 :: [[(Float, Float)]] -> [[(Float, Float)]]
+   step1 [] = []
+   step1 (f:[]) = [f]
+   step1 ([]:f1:f2:rest) = f1:(frame_difference_f f1 f2):(step1 $ f2:rest)
+   step1    (f1:f2:rest) =    (frame_difference_f f1 f2):(step1 $ f2:rest)
+----------------------------------------------------------------------------------------------------
+
+
+{-- ================================================================================================
+================================================================================================ --}
+frame_difference_sequence_f_dyn :: [[(Dynamic, Dynamic)]] -> [[(Processor_data, Processor_data)]]
+frame_difference_sequence_f_dyn  row =
+                     map (
+                          map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0:: Float) ),
+                                           Pd (toDyn y) (show . \z -> fromDyn z (0:: Float) ) ))
+                         ) $
+                     frame_difference_sequence_f $
+                     map (
+                           map (\(x, y) -> ((fromDyn x 0):: Float  , (fromDyn y 0):: Float ))
+                         ) row
+----------------------------------------------------------------------------------------------------
 
 
 
@@ -715,6 +774,42 @@ apply_processors :: [( [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)
 apply_processors [] _ = []
 apply_processors (processor:rest) input = (processor input):(apply_processors rest input)
 ----------------------------------------------------------------------------------------------------
+
+
+
+
+{-- ================================================================================================
+================================================================================================ --}
+apply_processors_context_sensitive ::
+                             [( [[(Dynamic, Dynamic)]] -> [[(Processor_data, Processor_data)]] )] ->
+                                [[(Dynamic, Dynamic)]] -> [[[ (Processor_data, Processor_data) ]]]
+apply_processors_context_sensitive [] _ = []
+apply_processors_context_sensitive p i = --[apply_processors [identity_f_dyn] $ head i]
+                                         --step1 p i
+                                         rearrange $ step1 p i
+  where
+
+  step1 :: [( [[(Dynamic, Dynamic)]] -> [[(Processor_data, Processor_data)]] )] ->
+                                [[(Dynamic, Dynamic)]] -> [[[ (Processor_data, Processor_data) ]]]
+  step1 [] _ = []
+  step1 (processor:rest) input = (processor input) : (step1 rest input)
+
+  rearrange :: [[[ (Processor_data, Processor_data) ]]] -> [[[ (Processor_data, Processor_data) ]]]
+  rearrange [] = []
+  rearrange d = slice [] d []
+
+  slice :: [[[ (Processor_data, Processor_data) ]]] ->
+           [[[ (Processor_data, Processor_data) ]]] ->
+            [[ (Processor_data, Processor_data) ]] ->
+           [[[ (Processor_data, Processor_data) ]]]
+  slice [] [] _ = []
+  slice r [] hs = (reverse hs):slice [] (reverse r) []
+                  --(reverse r, reverse hs)
+  slice remained (ti:thisIteration) hs = (\(h,t) -> slice (t:remained) thisIteration (h ++ hs) ) $
+                                                                                        splitAt 1 ti
+----------------------------------------------------------------------------------------------------
+
+
 
 
 
@@ -785,8 +880,6 @@ stack_output_matrix input = step1 0 input
                (Processor_data, Processor_data, Processor_data)
       step3 y (x,z) = (x,y,z)
 ----------------------------------------------------------------------------------------------------
-
-
 
 
 

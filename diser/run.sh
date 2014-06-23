@@ -5,6 +5,22 @@
 #./diser --gnuplot-file plot.gpi --range-of-files 1..1000 --data-process identity --data-file /home/hokum/Documents/pixels_to_signals/sda3/temp/new_Automatic_Traffic_Surveillance.avi/data_files/data |gnuplot -persist|ffmpeg -f mjpeg -i pipe: -f avi -vcodec copy -s 640x480 pipe:|mplayer -profile prof3 -
 
 
+
+diser --gnuplot-file plot.gpi \
+        --data-process frame_difference_sequence_f\
+        --use-columns 1:2 \
+        --data-file xxx \
+        --multipage-data-file 3 \
+        > frame_difference_sequence_f.plot
+
+
+#--matrix-stacking \
+#cat frame_difference_sequence_f.plot |gnuplot -persist > frame_difference_sequence_f.jpg
+
+
+
+
+: << 'xxx'
 diser --gnuplot-file plot.gpi \
         --data-process max_derivative_in_range_xy_f\
         --use-columns 1:2 \
@@ -26,7 +42,7 @@ diser --gnuplot-file plot.gpi \
 
 cat min_derivative_in_range_xy_f.plot |gnuplot -persist > min_derivative_in_range_xy_f.jpg
 
-: << 'xxx'
+
 diser --gnuplot-file plot.gpi \
         --data-process distance_between_extremums_f\
         --use-columns 1:2 \
