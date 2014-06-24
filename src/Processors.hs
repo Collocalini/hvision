@@ -661,6 +661,7 @@ mark_extremums variant input@(prev@(x_prev, y_prev):curr@(x_curr, y_curr):rest)
 
     step2max :: [(Float, Float)] -> [(Float, Float)]
     step2max [] = []
+    step2max (_:[]) = []
     step2max (_:_:[]) = []
     step2max (prev@(x_prev, y_prev):curr@(x_curr, y_curr):next@(x_next, y_next):rest)
         |up y_prev y_curr y_next = curr:(step2max $ curr:next:rest)
@@ -669,6 +670,7 @@ mark_extremums variant input@(prev@(x_prev, y_prev):curr@(x_curr, y_curr):rest)
 
     step2min :: [(Float, Float)] -> [(Float, Float)]
     step2min [] = []
+    step2min (_:[]) = []
     step2min (_:_:[]) = []
     step2min (prev@(x_prev, y_prev):curr@(x_curr, y_curr):next@(x_next, y_next):rest)
        -- |up y_prev y_curr y_next = curr:(step2min $ curr:next:rest)

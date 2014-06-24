@@ -1,12 +1,12 @@
 Version of session file format:
                1
 Time of storage:
-               "Tue Jun 24 14:43:35 GET 2014"
-Layout:        VerticalP (TerminalP {paneGroups = fromList [], paneTabs = Just TopP, currentPage = 1, detachedId = Nothing, detachedSize = Nothing}) (TerminalP {paneGroups = fromList [], paneTabs = Just TopP, currentPage = 1, detachedId = Nothing, detachedSize = Nothing}) 1082
-Population:    [(Just (ErrorsSt ErrorsState),[SplitP RightP]),(Just (BufferSt (BufferState "/home/hokum/Documents/haskell/diser/src/Global.hs" 7551)),[SplitP LeftP]),(Just (LogSt LogState),[SplitP RightP]),(Just (BufferSt (BufferState "/home/hokum/Documents/haskell/diser/src/Main.hs" 21297)),[SplitP LeftP]),(Just (BufferSt (BufferState "/home/hokum/Documents/haskell/diser/src/Processors.hs" 29888)),[SplitP LeftP]),(Just (WorkspaceSt WorkspaceState),[SplitP RightP])]
+               "Tue Jun 24 16:21:35 GET 2014"
+Layout:        VerticalP (TerminalP {paneGroups = fromList [], paneTabs = Just TopP, currentPage = 2, detachedId = Nothing, detachedSize = Nothing}) (TerminalP {paneGroups = fromList [], paneTabs = Just TopP, currentPage = 1, detachedId = Nothing, detachedSize = Nothing}) 1011
+Population:    [(Just (ErrorsSt ErrorsState),[SplitP RightP]),(Just (BufferSt (BufferState "/home/hokum/Documents/haskell/diser/src/Global.hs" 7551)),[SplitP LeftP]),(Just (LogSt LogState),[SplitP RightP]),(Just (BufferSt (BufferState "/home/hokum/Documents/haskell/diser/src/Main.hs" 21360)),[SplitP LeftP]),(Just (BufferSt (BufferState "/home/hokum/Documents/haskell/diser/src/Processors.hs" 28613)),[SplitP LeftP]),(Just (WorkspaceSt WorkspaceState),[SplitP RightP])]
 Window size:   (1280,993)
 Workspace:     Just "/home/hokum/Documents/haskell/diser/diser.lkshw"
-Active pane:   Just "Main.hs"
+Active pane:   Just "Processors.hs"
 Toolbar visible:
                True
 FindbarState:  (True,FindState {entryStr = "", entryHist = ["weed_data_from_input","wait_for_piece_of_data","prepare_input",")","()","(\955)","(\955l)","(\955l\8594)","(\955l\8594 )","(\955l\8594  )","(\955l\8594  r)","(\955l\8594  re)"], replaceStr = "head_repeats", replaceHist = [], caseSensitive = False, entireWord = False, wrapAround = False, regex = False, lineNr = 1})

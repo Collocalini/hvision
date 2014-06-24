@@ -3,7 +3,7 @@
 #./diser |gnuplot -persist|ffmpeg -f mjpeg -i pipe: -f avi pipe:|mplayer -profile prof3 -
 #./diser --gnuplot-file plot.gpi --range-of-files 1..1000 --data-bypass-mode --data-file /home/hokum/Documents/pixels_to_signals/sda3/temp/new_Automatic_Traffic_Surveillance.avi/data_files/data |gnuplot -persist|ffmpeg -f mjpeg -i pipe: -f avi -vcodec copy -s 640x480 pipe:|mplayer -profile prof3 -
 #./diser --gnuplot-file plot.gpi --range-of-files 1..1000 --data-process identity --data-file /home/hokum/Documents/pixels_to_signals/sda3/temp/new_Automatic_Traffic_Surveillance.avi/data_files/data |gnuplot -persist|ffmpeg -f mjpeg -i pipe: -f avi -vcodec copy -s 640x480 pipe:|mplayer -profile prof3 -
-
+: << 'xxx'
 diser --gnuplot-file plot.gpi \
       --data-process identity_f \
       --data-file /home/hokum/Documents/pixels_to_signals/sda3/temp/New_qwerty1.avi/data_files/data \
@@ -12,7 +12,7 @@ diser --gnuplot-file plot.gpi \
       > New_qwerty1.data
 
 
-: << 'xxx'
+
 
 diser --gnuplot-file plot.gpi \
         --data-process frame_difference_sequence_f\
