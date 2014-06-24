@@ -690,6 +690,7 @@ mark_extremums variant input@(prev@(x_prev, y_prev):curr@(x_curr, y_curr):rest)
 ================================================================================================ --}
 frame_difference_f :: [(Float, Float)] -> [(Float, Float)] -> [(Float, Float)]
 --frame_difference_f _ _ = [(0,0),(0,0),(0,0)]
+--frame_difference_f l r = identity_f l
 frame_difference_f [] _ = []
 frame_difference_f _ [] = []
 frame_difference_f ((x1,y1):rest1) ((x2,y2):rest2)
@@ -704,13 +705,13 @@ frame_difference_f ((x1,y1):rest1) ((x2,y2):rest2)
 ================================================================================================ --}
 frame_difference_sequence_f :: [[(Float, Float)]] -> [[(Float, Float)]]
 frame_difference_sequence_f [] = []
-frame_difference_sequence_f input = --[[(0,0),(0,0),(0,0)]]
-                                    step1 input
+frame_difference_sequence_f (h:input) = --[[(0,0),(0,0),(0,0)]]
+                                    h:step1 input
    where
    step1 :: [[(Float, Float)]] -> [[(Float, Float)]]
    step1 [] = []
    step1 (f:[]) = [f]
-   step1 ([]:f1:f2:rest) = f1:(frame_difference_f f1 f2):(step1 $ f2:rest)
+   --step1 ([]:f1:f2:rest) = f1:(frame_difference_f f1 f2):(step1 $ f2:rest)
    step1    (f1:f2:rest) =    (frame_difference_f f1 f2):(step1 $ f2:rest)
 ----------------------------------------------------------------------------------------------------
 
@@ -796,17 +797,40 @@ apply_processors_context_sensitive p i = --[apply_processors [identity_f_dyn] $ 
 
   rearrange :: [[[ (Processor_data, Processor_data) ]]] -> [[[ (Processor_data, Processor_data) ]]]
   rearrange [] = []
-  rearrange d = slice [] d []
+  rearrange d = run_slices ([], d)
 
   slice :: [[[ (Processor_data, Processor_data) ]]] ->
            [[[ (Processor_data, Processor_data) ]]] ->
             [[ (Processor_data, Processor_data) ]] ->
-           [[[ (Processor_data, Processor_data) ]]]
-  slice [] [] _ = []
-  slice r [] hs = (reverse hs):slice [] (reverse r) []
-                  --(reverse r, reverse hs)
-  slice remained (ti:thisIteration) hs = (\(h,t) -> slice (t:remained) thisIteration (h ++ hs) ) $
-                                                                                        splitAt 1 ti
+           ([[ (Processor_data, Processor_data) ]], [[[ (Processor_data, Processor_data) ]]])
+  slice []        []                       [] = ([], [])
+  slice []        []                       hs = (reverse hs, [])
+  slice r        []                        hs = (reverse hs, reverse r)
+  slice []       ((h:hrest):thisIteration) [] = slice ([hrest])
+                                                      (thisIteration)
+                                                      ([h])
+  slice []       ((h:[]):thisIteration)    [] = slice ([])
+                                                      (thisIteration)
+                                                      ([h])
+  slice []       (([]):thisIteration)      [] = slice ([])
+                                                      (thisIteration)
+                                                      ([])
+  slice remained ((h:hrest):thisIteration) hs = slice (hrest :remained)
+                                                      (thisIteration)
+                                                      (h:hs)
+  slice remained ((h:[]):thisIteration)    hs = slice (remained)
+                                                      (thisIteration)
+                                                      (h:hs)
+  slice remained (([]):thisIteration)      hs = slice (remained)
+                                                      (thisIteration)
+                                                      (hs)
+
+  run_slices ::
+              ([[ (Processor_data, Processor_data) ]], [[[ (Processor_data, Processor_data) ]]]) ->
+              [[[ (Processor_data, Processor_data) ]]] -- ->
+  run_slices (_, [])         = []
+  run_slices ([], remained)  = run_slices $ slice [] remained []
+  run_slices (row, remained) = row:(run_slices $ slice [] remained [])
 ----------------------------------------------------------------------------------------------------
 
 

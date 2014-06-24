@@ -254,8 +254,12 @@ eol_char = "\n"
 read_file_if_exists :: FilePath -> IO String
 read_file_if_exists [] = do return ""
 read_file_if_exists name  = do
-       handle <- openFile name ReadMode
-       c <- hGetContents handle
-       return c
+       --handle <- openFile name ReadMode
+       --c <- hGetContents handle
+      -- hClose handle
+       --c <- readFile name
+       readFile name
+       --return c
+
 -------------------------------------------------------------
 

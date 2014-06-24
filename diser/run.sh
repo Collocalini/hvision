@@ -4,23 +4,30 @@
 #./diser --gnuplot-file plot.gpi --range-of-files 1..1000 --data-bypass-mode --data-file /home/hokum/Documents/pixels_to_signals/sda3/temp/new_Automatic_Traffic_Surveillance.avi/data_files/data |gnuplot -persist|ffmpeg -f mjpeg -i pipe: -f avi -vcodec copy -s 640x480 pipe:|mplayer -profile prof3 -
 #./diser --gnuplot-file plot.gpi --range-of-files 1..1000 --data-process identity --data-file /home/hokum/Documents/pixels_to_signals/sda3/temp/new_Automatic_Traffic_Surveillance.avi/data_files/data |gnuplot -persist|ffmpeg -f mjpeg -i pipe: -f avi -vcodec copy -s 640x480 pipe:|mplayer -profile prof3 -
 
+diser --gnuplot-file plot.gpi \
+      --data-process identity_f \
+      --data-file /home/hokum/Documents/pixels_to_signals/sda3/temp/New_qwerty1.avi/data_files/data \
+      --use-columns 1:2 \
+      --range-of-files 1..1000
+      > New_qwerty1.data
 
+
+: << 'xxx'
 
 diser --gnuplot-file plot.gpi \
         --data-process frame_difference_sequence_f\
         --use-columns 1:2 \
         --data-file xxx \
         --multipage-data-file 3 \
+        --matrix-stacking \
         > frame_difference_sequence_f.plot
 
-
-#--matrix-stacking \
-#cat frame_difference_sequence_f.plot |gnuplot -persist > frame_difference_sequence_f.jpg
+cat frame_difference_sequence_f.plot |gnuplot -persist > frame_difference_sequence_f.png
 
 
 
 
-: << 'xxx'
+
 diser --gnuplot-file plot.gpi \
         --data-process max_derivative_in_range_xy_f\
         --use-columns 1:2 \
@@ -29,7 +36,7 @@ diser --gnuplot-file plot.gpi \
         --matrix-stacking \
         > max_derivative_in_range_xy_f.plot
 
-cat max_derivative_in_range_xy_f.plot |gnuplot -persist > max_derivative_in_range_xy_f.jpg
+cat max_derivative_in_range_xy_f.plot |gnuplot -persist > max_derivative_in_range_xy_f.png
 
 
 diser --gnuplot-file plot.gpi \
@@ -40,7 +47,7 @@ diser --gnuplot-file plot.gpi \
         --matrix-stacking \
         > min_derivative_in_range_xy_f.plot
 
-cat min_derivative_in_range_xy_f.plot |gnuplot -persist > min_derivative_in_range_xy_f.jpg
+cat min_derivative_in_range_xy_f.plot |gnuplot -persist > min_derivative_in_range_xy_f.png
 
 
 diser --gnuplot-file plot.gpi \
@@ -51,7 +58,7 @@ diser --gnuplot-file plot.gpi \
         --matrix-stacking \
         > distance_between_extremums_f.plot
 
-cat distance_between_extremums_f.plot |gnuplot -persist > distance_between_extremums_f.jpg
+cat distance_between_extremums_f.plot |gnuplot -persist > distance_between_extremums_f.png
 
 
 
@@ -64,7 +71,7 @@ diser --gnuplot-file plot.gpi \
         --matrix-stacking \
         > derivative_f.plot
 
-cat derivative_f.plot |gnuplot -persist > derivative_f.jpg
+cat derivative_f.plot |gnuplot -persist > derivative_f.png
 
 
 
@@ -79,7 +86,7 @@ diser --gnuplot-file plot.gpi \
         --matrix-stacking \
         > identity_f.plot
 
-cat identity_f.plot |gnuplot -persist > identity_f.jpg
+cat identity_f.plot |gnuplot -persist > identity_f.png
 
 
 diser --gnuplot-file plot.gpi \
@@ -90,7 +97,7 @@ diser --gnuplot-file plot.gpi \
         --matrix-stacking \
         > extremums_f.plot
 
-cat extremums_f.plot |gnuplot -persist > extremums_f.jpg
+cat extremums_f.plot |gnuplot -persist > extremums_f.png
 
 
 
@@ -103,7 +110,7 @@ diser --gnuplot-file plot.gpi \
         --matrix-stacking \
         > processor_x_2_f.plot
 
-cat processor_x_2_f.plot |gnuplot -persist > processor_x_2_f.jpg
+cat processor_x_2_f.plot |gnuplot -persist > processor_x_2_f.png
 
 
 diser --gnuplot-file plot.gpi \
@@ -114,7 +121,7 @@ diser --gnuplot-file plot.gpi \
         --matrix-stacking \
         > processor_x_2_2_f.plot
 
-cat processor_x_2_2_f.plot |gnuplot -persist > processor_x_2_2_f.jpg
+cat processor_x_2_2_f.plot |gnuplot -persist > processor_x_2_2_f.png
 
 
 diser --gnuplot-file plot.gpi \
@@ -125,7 +132,7 @@ diser --gnuplot-file plot.gpi \
         --matrix-stacking \
         > processor_x_2_3_f.plot
 
-cat processor_x_2_3_f.plot |gnuplot -persist > processor_x_2_3_f.jpg
+cat processor_x_2_3_f.plot |gnuplot -persist > processor_x_2_3_f.png
 
 
 diser --gnuplot-file plot.gpi \
@@ -136,7 +143,7 @@ diser --gnuplot-file plot.gpi \
         --matrix-stacking \
         > processor_xm_2_f.plot
 
-cat processor_xm_2_f.plot |gnuplot -persist > processor_xm_2_f.jpg
+cat processor_xm_2_f.plot |gnuplot -persist > processor_xm_2_f.png
 
 
 
@@ -148,7 +155,7 @@ diser --gnuplot-file plot.gpi \
         --matrix-stacking \
         > processor_xm_2_2_f.plot
 
-cat processor_xm_2_2_f.plot |gnuplot -persist > processor_xm_2_2_f.jpg
+cat processor_xm_2_2_f.plot |gnuplot -persist > processor_xm_2_2_f.png
 
 diser --gnuplot-file plot.gpi \
         --data-process processor_xm_2_3_f\
@@ -158,7 +165,7 @@ diser --gnuplot-file plot.gpi \
         --matrix-stacking \
         > processor_xm_2_3_f.plot
 
-cat processor_xm_2_3_f.plot |gnuplot -persist > processor_xm_2_3_f.jpg
+cat processor_xm_2_3_f.plot |gnuplot -persist > processor_xm_2_3_f.png
 
 
 

@@ -19,6 +19,7 @@ main
 ) where
 
 import System.IO
+import System.IO.Unsafe
 import System.Environment
 import Data.List
 import Data.Dynamic
@@ -38,9 +39,14 @@ import Global
 
 
 
+--gnuplot_file :: DMap.Map String String -> IO String
+--gnuplot_file tag_DMap = \x -> x =<< gnuplot_file' tag_DMap
+
 gnuplot_file :: DMap.Map String String -> IO String
-gnuplot_file tag_DMap = read_file_if_exists (DMap.findWithDefault "Not found"
+gnuplot_file tag_DMap = --return ""--unsafeInterleaveIO $
+                        read_file_if_exists (DMap.findWithDefault "Not found"
                                                                  ( argument_gnuplot_file) tag_DMap)
+
 
 data_file :: DMap.Map String String -> [IO String]
 data_file tag_DMap = [read_file_if_exists (DMap.findWithDefault "Not found" ( argument_data_file)
@@ -158,7 +164,7 @@ data_process_common tag_DMap processors adaptTo x = iterate_all_data tag_DMap $
                     map (toStringTable . stack_output . (apply_processors (processors)) . adaptTo) x
 
 ----------------------------------------------------------------------------------------------------
-{--
+{-- common steps in data_process_range_sensitive
 ===============================================================================================  --}
 data_process_common_range_sensitive :: DMap.Map String String ->
                              [([[(Dynamic, Dynamic)]] -> [[ (Processor_data, Processor_data) ]])] ->
@@ -169,6 +175,21 @@ data_process_common_range_sensitive tag_DMap processors adaptTo x = iterate_all_
   map (toStringTable . stack_output) $ apply_processors_context_sensitive processors $ map adaptTo x
 
 ----------------------------------------------------------------------------------------------------
+
+{-- common steps in data_process_range_sensitive_matrix_output
+===============================================================================================  --}
+data_process_common_range_sensitive_matrix_output :: DMap.Map String String ->
+                             [([[(Dynamic, Dynamic)]] -> [[ (Processor_data, Processor_data) ]])] ->
+                             (String -> [(Dynamic, Dynamic)] ) ->
+                             [String] -> -- input
+                             IO ()
+data_process_common_range_sensitive_matrix_output tag_DMap processors adaptTo x =
+  iterate_all_data tag_DMap [toStringTable_matrix $ stack_output_matrix $
+                                      apply_processors_context_sensitive processors $ map adaptTo x]
+
+----------------------------------------------------------------------------------------------------
+
+
 {-- common steps in data_processMultipage_fromStdin_matrix_output
 ===============================================================================================  --}
 data_process_common_matrix_output :: DMap.Map String String ->
@@ -273,14 +294,19 @@ data_process_range_sensitive_matrix_output :: DMap.Map String String -> [Int] ->
                                ([String] -> [String]) ->
                                IO ()
 data_process_range_sensitive_matrix_output  tag_DMap [] processors adaptTo prepare_input =
-   (data_file' $ data_file tag_DMap) >>= \x -> iterate_all_data tag_DMap $
-     [toStringTable_matrix $ stack_output_matrix $ apply_processors_context_sensitive processors $
-                                                                    (map adaptTo) $ prepare_input x]
+   (data_file' $ data_file tag_DMap) >>= \x -> data_process_common_range_sensitive_matrix_output
+                                                                                 tag_DMap
+                                                                                 processors
+                                                                                 adaptTo $
+                                                                                 prepare_input x
 
 data_process_range_sensitive_matrix_output tag_DMap range processors adaptTo prepare_input =
-   (data_file' $ data_file_range tag_DMap range) >>= \x -> iterate_all_data tag_DMap $
-     [toStringTable_matrix $ stack_output_matrix $ apply_processors_context_sensitive processors $
-                                                                    (map adaptTo) $ prepare_input x]
+   (data_file' $ data_file_range tag_DMap range) >>= \x ->
+                                             data_process_common_range_sensitive_matrix_output
+                                                                                 tag_DMap
+                                                                                 processors
+                                                                                 adaptTo $
+                                                                                 prepare_input x
 ----------------------------------------------------------------------------------------------------
 
 
@@ -391,8 +417,9 @@ routine args
 
      is_multipage :: Bool
      is_multipage
-        |default_multipage_data_file /= (DMap.findWithDefault default_multipage_data_file
-                                                 argument_multipage_data_file $ tag_DMap') = True
+        |(not has_frame_context_sensitive) && default_multipage_data_file /=
+          (DMap.findWithDefault default_multipage_data_file argument_multipage_data_file $
+                                                                                   tag_DMap') = True
         |otherwise = False
 
      is_from_stdin :: Bool
@@ -402,13 +429,14 @@ routine args
         |otherwise = False
 
      has_frame_context_sensitive :: Bool
-     has_frame_context_sensitive = --True
+     has_frame_context_sensitive = -- True
         hasit $ recognizeDemanded_processors_frame_context_sensitive $ get_demanded_processors
                   (DMap.findWithDefault default_data_process argument_data_process tag_DMap')
 
         where
         hasit :: [a] -> Bool
         hasit [] = False
+        --hasit [] = False
         hasit _  = True
 
      matrix_stacking_required :: Bool
@@ -439,17 +467,10 @@ routine args
         |is_from_stdin && (not matrix_stacking_required) = stdInDefault
         |is_from_stdin && matrix_stacking_required     = stdInMatrixStacking
 
-        |has_frame_context_sensitive && (not matrix_stacking_required) = context_sencitiveDefault
-        |has_frame_context_sensitive && matrix_stacking_required    = context_sencitiveMatrixStacking
-        |otherwise = data_processM tag_DMap' range
-                       (
-                       recognizeDemanded_processors $
-                       get_demanded_processors
-                       (DMap.findWithDefault default_data_process argument_data_process tag_DMap')
-                       )
-
-                       (stringToFloatList_mn_dyn column_m column_n)
-      {--   --}
+        |has_frame_context_sensitive && (not matrix_stacking_required) = context_sensitiveDefault
+        |has_frame_context_sensitive && matrix_stacking_required    = context_sensitiveMatrixStacking
+        |otherwise = putStrLn "mode recognition error"
+   {--      --}
 
      recognizeDemanded_processors :: [String] ->
                            [( [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)] )]
@@ -489,7 +510,7 @@ routine args
         step2 (proc:rest)
             |frame_difference_sequence_processor' proc = frame_difference_sequence_f_dyn:
                                                                                         (step2 rest)
-            |otherwise = frame_difference_sequence_f_dyn:(step2 rest)--step2 rest
+            |otherwise = step2 rest
 
      multipageDefault = data_processMultipage tag_DMap' range
                        (
@@ -544,7 +565,7 @@ routine args
                        )
 
 
-     context_sencitiveDefault = data_process_range_sensitive tag_DMap' range
+     context_sensitiveDefault = data_process_range_sensitive tag_DMap' range
                        (
                        recognizeDemanded_processors_frame_context_sensitive $
                        get_demanded_processors
@@ -556,7 +577,7 @@ routine args
                                                            argument_multipage_data_file $ tag_DMap')
                        )
 
-     context_sencitiveMatrixStacking = data_process_range_sensitive_matrix_output tag_DMap' range
+     context_sensitiveMatrixStacking = data_process_range_sensitive_matrix_output tag_DMap' range
                        (
                        recognizeDemanded_processors_frame_context_sensitive $
                        get_demanded_processors
