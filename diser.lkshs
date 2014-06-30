@@ -1,15 +1,15 @@
 Version of session file format:
                1
 Time of storage:
-               "Tue Jun 24 14:43:35 GET 2014"
-Layout:        VerticalP (TerminalP {paneGroups = fromList [], paneTabs = Just TopP, currentPage = 1, detachedId = Nothing, detachedSize = Nothing}) (TerminalP {paneGroups = fromList [], paneTabs = Just TopP, currentPage = 1, detachedId = Nothing, detachedSize = Nothing}) 1082
-Population:    [(Just (ErrorsSt ErrorsState),[SplitP RightP]),(Just (BufferSt (BufferState "/home/hokum/Documents/haskell/diser/src/Global.hs" 7551)),[SplitP LeftP]),(Just (LogSt LogState),[SplitP RightP]),(Just (BufferSt (BufferState "/home/hokum/Documents/haskell/diser/src/Main.hs" 21297)),[SplitP LeftP]),(Just (BufferSt (BufferState "/home/hokum/Documents/haskell/diser/src/Processors.hs" 29888)),[SplitP LeftP]),(Just (WorkspaceSt WorkspaceState),[SplitP RightP])]
+               "Mon Jun 30 16:54:52 GET 2014"
+Layout:        VerticalP (TerminalP {paneGroups = fromList [], paneTabs = Just TopP, currentPage = 1, detachedId = Nothing, detachedSize = Nothing}) (TerminalP {paneGroups = fromList [], paneTabs = Just TopP, currentPage = 1, detachedId = Nothing, detachedSize = Nothing}) 807
+Population:    [(Just (ErrorsSt ErrorsState),[SplitP RightP]),(Just (BufferSt (BufferState "/home/hokum/Documents/haskell/diser/src/Global.hs" 1287)),[SplitP LeftP]),(Just (BufferSt (BufferState "/home/hokum/Documents/haskell/diser/src/ImageManipulation.hs" 129)),[SplitP LeftP]),(Just (LogSt LogState),[SplitP RightP]),(Just (BufferSt (BufferState "/home/hokum/Documents/haskell/diser/src/Main.hs" 393)),[SplitP LeftP]),(Just (BufferSt (BufferState "/home/hokum/Documents/haskell/diser/src/Processors.hs" 35022)),[SplitP LeftP]),(Just (WorkspaceSt WorkspaceState),[SplitP RightP])]
 Window size:   (1280,993)
 Workspace:     Just "/home/hokum/Documents/haskell/diser/diser.lkshw"
-Active pane:   Just "Main.hs"
+Active pane:   Just "ImageManipulation.hs"
 Toolbar visible:
                True
-FindbarState:  (True,FindState {entryStr = "", entryHist = ["weed_data_from_input","wait_for_piece_of_data","prepare_input",")","()","(\955)","(\955l)","(\955l\8594)","(\955l\8594 )","(\955l\8594  )","(\955l\8594  r)","(\955l\8594  re)"], replaceStr = "head_repeats", replaceHist = [], caseSensitive = False, entireWord = False, wrapAround = False, regex = False, lineNr = 1})
+FindbarState:  (False,FindState {entryStr = "", entryHist = ["weed_data_from_input","wait_for_piece_of_data","prepare_input",")","()","(\955)","(\955l)","(\955l\8594)","(\955l\8594 )","(\955l\8594  )","(\955l\8594  r)","(\955l\8594  re)"], replaceStr = "head_repeats", replaceHist = [], caseSensitive = False, entireWord = False, wrapAround = False, regex = False, lineNr = 1})
 Recently opened files:
                ["/home/hokum/Documents/haskell/autoScan/src/AutoScan.hs","/home/hokum/Documents/haskell/autoScan/src/Main.hs","/home/hokum/Documents/haskell/autoScan/src/Global.hs","/home/hokum/Documents/haskell/autoScan/src/PatternRecognition.hs","/home/hokum/Documents/haskell/hairProject/src/Global.hs","/home/hokum/Documents/haskell/hairProject/src/Main.hs","/home/hokum/Documents/haskell/hairProject/src/HairMain.hs","/home/hokum/Documents/haskell/hairProject/src/HairMain","/home/hokum/Documents/haskell/extract_backup/src/Global.hs","/home/hokum/Documents/haskell/extract_backup/src/Main.hs","/home/hokum/Documents/haskell/diser/src/TriangularPattern.hs","/home/hokum/Documents/haskell/diser/src/AdHoc.hs"]
 Recently opened workspaces:

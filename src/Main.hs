@@ -469,7 +469,7 @@ routine args
 
         |has_frame_context_sensitive && (not matrix_stacking_required) = context_sensitiveDefault
         |has_frame_context_sensitive && matrix_stacking_required    = context_sensitiveMatrixStacking
-        |otherwise = putStrLn "mode recognition error"
+        |otherwise = oldDefault
    {--      --}
 
      recognizeDemanded_processors :: [String] ->
@@ -523,6 +523,15 @@ routine args
                                                    (DMap.findWithDefault default_multipage_data_file
                                                            argument_multipage_data_file $ tag_DMap')
                        )
+
+     oldDefault = data_processM tag_DMap' range
+                       (
+                       recognizeDemanded_processors $
+                       get_demanded_processors
+                       (DMap.findWithDefault default_data_process argument_data_process tag_DMap')
+                       )
+                       (stringToFloatList_mn_dyn column_m column_n)
+
 
      multipageMatrixStacking =  data_processMultipage_matrix_output tag_DMap' range
                        (

@@ -53,14 +53,15 @@ stack_output_matrix,
 toStringTable,
 toStringTable_matrix,
 --toStringTable_matrix_context,
-Processor_data,
+Processor_data
+
 
 ) where
 
 import Data.List
 import Data.Dynamic
 import qualified Data.Map as DMap
-
+import ImageManipulation
 --
 data Processor_data = Pd Dynamic  (Dynamic -> String) --deriving (Show)
 
@@ -389,25 +390,6 @@ processor_x_n n row = do
                                                                     distances_to_falloff prest nrest
   --------------------------------------------------------------------------------------------------
 
-  {-- ==============================================================================================
-  -- assumes that first_n are sorted by x coordinate
-  -- assumes that row_rest is sorted by x coordinate
-  ============================================================================================== --}
-  break_to_n :: [(Float, Float)] -> [(Float, Float)] -> [[(Float, Float)]]
-  break_to_n first_n row_rest = step1 (delimeters first_n) row_rest
-     where
-     delimeters :: [(Float, Float)] -> [Float]
-     delimeters [] = []
-     delimeters [_] = []
-     delimeters ((x, _):(xn, _):rest) =  ((xn - x)/2 ):(delimeters rest)
-
-     in_range :: Float -> (Float, Float) -> Bool
-     in_range lim (x, _) = x <= lim
-
-     step1 :: [Float] -> [(Float, Float)] -> [[(Float, Float)]]
-     step1 [] row = [row]
-     step1 (lim:rest) row = (\(l,r) -> l:(step1 rest r) ) $ span (in_range lim) row
-  --------------------------------------------------------------------------------------------------
   test_show_falloff :: [(Float, Float, (Float, Float), (Float, Float))] -> [(Float, Float)]
   test_show_falloff [] = []
   test_show_falloff ((px, _, (m1, b1), (m2, b2)):rest) =
@@ -420,6 +402,28 @@ processor_x_n n row = do
        xr      = [px .. r]
        f m b x = (x, m*x + b)
 ----------------------------------------------------------------------------------------------------
+
+{-- ==============================================================================================
+-- assumes that first_n are sorted by x coordinate
+-- assumes that row_rest is sorted by x coordinate
+============================================================================================== --}
+break_to_n :: [(Float, Float)] -> [(Float, Float)] -> [[(Float, Float)]]
+break_to_n first_n row_rest = step1 (delimeters first_n) row_rest
+     where
+     delimeters :: [(Float, Float)] -> [Float]
+     delimeters [] = []
+     delimeters [_] = []
+     delimeters ((x, _):(xn, _):rest) =  ((xn - x)/2 ):(delimeters rest)
+
+     in_range :: Float -> (Float, Float) -> Bool
+     in_range lim (x, _) = x <= lim
+
+     step1 :: [Float] -> [(Float, Float)] -> [[(Float, Float)]]
+     step1 [] row = [row]
+     step1 (lim:rest) row = (\(l,r) -> l:(step1 rest r) ) $ span (in_range lim) row
+--------------------------------------------------------------------------------------------------
+
+
 {--    |
        |
        |
@@ -661,6 +665,7 @@ mark_extremums variant input@(prev@(x_prev, y_prev):curr@(x_curr, y_curr):rest)
 
     step2max :: [(Float, Float)] -> [(Float, Float)]
     step2max [] = []
+    step2max (_:[]) = []
     step2max (_:_:[]) = []
     step2max (prev@(x_prev, y_prev):curr@(x_curr, y_curr):next@(x_next, y_next):rest)
         |up y_prev y_curr y_next = curr:(step2max $ curr:next:rest)
@@ -669,6 +674,7 @@ mark_extremums variant input@(prev@(x_prev, y_prev):curr@(x_curr, y_curr):rest)
 
     step2min :: [(Float, Float)] -> [(Float, Float)]
     step2min [] = []
+    step2min (_:[]) = []
     step2min (_:_:[]) = []
     step2min (prev@(x_prev, y_prev):curr@(x_curr, y_curr):next@(x_next, y_next):rest)
        -- |up y_prev y_curr y_next = curr:(step2min $ curr:next:rest)
@@ -732,7 +738,116 @@ frame_difference_sequence_f_dyn  row =
 
 
 
+
+{-- ==============================================================================================
+============================================================================================== --}
+each_bar_is_a_pixel :: Float -> Float -> [Float]
+each_bar_is_a_pixel l h = [(l-0.5),(l+0.5) .. (h+0.5)]
+--------------------------------------------------------------------------------------------------
+
+
+
+{-- ==============================================================================================
+-- assumes that data_ is sorted by y coordinate
+============================================================================================== --}
+fall_to_ranges :: [(Float, Float)] -> [Float] -> [[(Float, Float)]]
+fall_to_ranges data_ bars = step1 bars data_
+  where
+
+  in_range :: Float -> (Float, Float) -> Bool
+  in_range lim (x, _) = x <= lim
+
+  step1 :: [Float] -> [(Float, Float)] -> [[(Float, Float)]]
+  step1 [] row = [row]
+  step1 (lim:rest) row = (\(l,r) -> l:(step1 rest r) ) $ span (in_range lim) row
+--------------------------------------------------------------------------------------------------
+
+
+
+{-- ==============================================================================================
+============================================================================================== --}
+histogram_y_per_pixel :: [(Float, Float)] -> [(Float, Float)]
+histogram_y_per_pixel [] = []
+histogram_y_per_pixel data_ = zip (each_bar_is_a_pixel miny maxy) $ map (fromIntegral.length) $
+                          fall_to_ranges (sortBy sortGt_by_y data_) $ each_bar_is_a_pixel miny maxy
+  where
+  (_, miny) = minimumBy sortGt_by_y data_
+  (_, maxy) = maximumBy sortGt_by_y data_
+--------------------------------------------------------------------------------------------------
+
+
+{-- ==============================================================================================
+============================================================================================== --}
+histogram_y_per_pixel_multiple_rows :: [[(Float, Float)]] -> [[(Float, Float)]]
+histogram_y_per_pixel_multiple_rows [] = []
+histogram_y_per_pixel_multiple_rows data_ = []{--zip (each_bar_is_a_pixel minx maxx) $
+                                                                     map histogram_y_per_pixel $
+                                                                     fall_to_ranges
+                                                                     each_bar_is_a_pixel minx maxx
+                                                                     data_-}
+
+  where
+  --(minx, _) = minimumBy sortGt_by_x data_
+  --(maxx, _) = maximumBy sortGt_by_x data_
+
+  cut_to_stripes_by_x = map one_stripe_x data_
+
+  one_stripe_x :: [(Float, Float)] -> [[(Float, Float)]]
+  one_stripe_x data_ = fall_to_ranges data_ $ each_bar_is_a_pixel minx maxx
+    where
+    (minx, _) = minimumBy sortGt_by_x data_
+    (maxx, _) = maximumBy sortGt_by_x data_
+
+  cut_to_stripes_by_y = map (map one_stripe_y) cut_to_stripes_by_x
+
+  one_stripe_y :: [(Float, Float)] -> [(Float, Float)]
+  one_stripe_y data_ = zip (each_bar_is_a_pixel miny maxy) $ map (fromIntegral.length) $
+                                                fall_to_ranges data_ $ each_bar_is_a_pixel miny maxy
+    where
+    (_, miny) = minimumBy sortGt_by_x data_
+    (_, maxy) = maximumBy sortGt_by_x data_
+
+--------------------------------------------------------------------------------------------------
+
+{-- ================================================================================================
+================================================================================================ --}
+distance_between_extremums_hist2d :: [[(Float, Float)]] -> [[(Float, Float)]]
+distance_between_extremums_hist2d data_ = histogram_y_per_pixel_multiple_rows $
+                                                              map distance_between_extremums_f data_
+----------------------------------------------------------------------------------------------------
+
+{-- ================================================================================================
+================================================================================================ --}
+--step_approximation :: [(Float, Float)] -> [(Float, Float)]
+--step_approximation data_ = []
+--  where
+
+----------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+
 -------------------------------- end of section of processors --------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 {-- ================================================================================================
 ================================================================================================ --}
@@ -755,6 +870,15 @@ sortGt_by_y (_, ly) (_, ry)
   | ly < ry = LT
   | ly > ry = GT
   | ly == ry = EQ
+----------------------------------------------------------------------------------------------------
+
+
+{-- ================================================================================================
+================================================================================================ --}
+sortLt_by_x (lx, _) (rx, _)
+  | lx < rx = GT
+  | lx > rx = LT
+  | lx == rx = EQ
 ----------------------------------------------------------------------------------------------------
 
 

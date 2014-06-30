@@ -3,10 +3,11 @@ version: 0.0.1
 cabal-version: -any
 build-type: Simple
 license: PublicDomain
-license-file: "license"
+license-file: license
 copyright:
 maintainer:
-build-depends: base -any, containers -any, parsec -any, pipes -any
+build-depends: JuicyPixels -any, base -any, containers -any,
+               parsec -any, pipes -any
 stability:
 homepage:
 package-url:
@@ -38,7 +39,7 @@ includes:
 install-includes:
 include-dirs:
 hs-source-dirs: src
-other-modules: Processors AdHoc Global
+other-modules: Processors ImageManipulation AdHoc Global
 ghc-prof-options:
 ghc-shared-options:
 ghc-options: -Wall -fwarn-tabs
