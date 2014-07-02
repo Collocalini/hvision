@@ -33,6 +33,8 @@ frame_difference_f,
 frame_difference_sequence_f,
 frame_difference_sequence_f_dyn,
 
+histogram_y_per_pixel_multiple_rows_f_dyn,
+
 stringToIntList,
 stringToIntList_dyn,
 intListToString,
@@ -742,16 +744,19 @@ frame_difference_sequence_f_dyn  row =
 {-- ==============================================================================================
 ============================================================================================== --}
 each_bar_is_a_pixel :: Float -> Float -> [Float]
-each_bar_is_a_pixel l h = [(l-0.5),(l+0.5) .. (h+0.5)]
+each_bar_is_a_pixel l h = [l,(l+1) .. h]
+                          --[(l-0.5),(l+0.5) .. (h+0.5)]
 --------------------------------------------------------------------------------------------------
 
 
 
 {-- ==============================================================================================
--- assumes that data_ is sorted by y coordinate
+-- assumes that data_ is sorted by x coordinate
 ============================================================================================== --}
-fall_to_ranges :: [(Float, Float)] -> [Float] -> [[(Float, Float)]]
-fall_to_ranges data_ bars = step1 bars data_
+fall_to_ranges_x :: [(Float, Float)] -> [Float] -> [[(Float, Float)]]
+fall_to_ranges_x [] _ = []
+fall_to_ranges_x d [] = [d]
+fall_to_ranges_x data_ bars = step1 bars data_
   where
 
   in_range :: Float -> (Float, Float) -> Bool
@@ -763,9 +768,28 @@ fall_to_ranges data_ bars = step1 bars data_
 --------------------------------------------------------------------------------------------------
 
 
+{-- ==============================================================================================
+-- assumes that data_ is sorted by y coordinate
+============================================================================================== --}
+fall_to_ranges_y :: [(Float, Float)] -> [Float] -> [[(Float, Float)]]
+fall_to_ranges_y [] _ = []
+fall_to_ranges_y d [] = [d]
+fall_to_ranges_y data_ bars = step1 bars data_
+  where
+
+  in_range :: Float -> (Float, Float) -> Bool
+  in_range lim (_, y) = y <= lim
+
+  step1 :: [Float] -> [(Float, Float)] -> [[(Float, Float)]]
+  step1 [] row = [row]
+  step1 (lim:rest) row = (\(l,r) -> l:(step1 rest r) ) $ span (in_range lim) row
+--------------------------------------------------------------------------------------------------
+
+
+
 
 {-- ==============================================================================================
-============================================================================================== --}
+==============================================================================================
 histogram_y_per_pixel :: [(Float, Float)] -> [(Float, Float)]
 histogram_y_per_pixel [] = []
 histogram_y_per_pixel data_ = zip (each_bar_is_a_pixel miny maxy) $ map (fromIntegral.length) $
@@ -774,58 +798,73 @@ histogram_y_per_pixel data_ = zip (each_bar_is_a_pixel miny maxy) $ map (fromInt
   (_, miny) = minimumBy sortGt_by_y data_
   (_, maxy) = maximumBy sortGt_by_y data_
 --------------------------------------------------------------------------------------------------
-
+--}
 
 {-- ==============================================================================================
 ============================================================================================== --}
 histogram_y_per_pixel_multiple_rows :: [[(Float, Float)]] -> [[(Float, Float)]]
 histogram_y_per_pixel_multiple_rows [] = []
-histogram_y_per_pixel_multiple_rows data_ = []{--zip (each_bar_is_a_pixel minx maxx) $
+histogram_y_per_pixel_multiple_rows data_ = cut_to_stripes_by_y $ cut_to_stripes_by_x data_
+                                                     {--zip (each_bar_is_a_pixel minx maxx) $
                                                                      map histogram_y_per_pixel $
                                                                      fall_to_ranges
                                                                      each_bar_is_a_pixel minx maxx
                                                                      data_-}
 
   where
-  --(minx, _) = minimumBy sortGt_by_x data_
-  --(maxx, _) = maximumBy sortGt_by_x data_
 
-  cut_to_stripes_by_x = map one_stripe_x data_
+  cut_to_stripes_by_x :: [[(Float, Float)]] -> [[[(Float, Float)]]]
+  cut_to_stripes_by_x data_ = map one_stripe_x data_
 
   one_stripe_x :: [(Float, Float)] -> [[(Float, Float)]]
-  one_stripe_x data_ = fall_to_ranges data_ $ each_bar_is_a_pixel minx maxx
+  one_stripe_x [] = []
+  one_stripe_x data_ = --zip (each_bar_is_a_pixel minx maxx) $ map (fromIntegral.length) $
+                                                fall_to_ranges_x (sortBy sortGt_by_x data_) $
+                                                each_bar_is_a_pixel minx maxx
     where
     (minx, _) = minimumBy sortGt_by_x data_
     (maxx, _) = maximumBy sortGt_by_x data_
 
-  cut_to_stripes_by_y = map (map one_stripe_y) cut_to_stripes_by_x
+  cut_to_stripes_by_y :: [[[(Float, Float)]]] -> [[(Float, Float)]]
+  cut_to_stripes_by_y step1 = --transpose $
+                              map one_stripe_y $ map concat $ transpose step1
 
   one_stripe_y :: [(Float, Float)] -> [(Float, Float)]
-  one_stripe_y data_ = zip (each_bar_is_a_pixel miny maxy) $ map (fromIntegral.length) $
-                                                fall_to_ranges data_ $ each_bar_is_a_pixel miny maxy
+  one_stripe_y [] = []
+  one_stripe_y data_ = zip ((miny-1):(each_bar_is_a_pixel miny maxy) ++ [(maxy+1)]) $ map (fromIntegral.length) $
+                                                fall_to_ranges_y (sortBy sortGt_by_y data_) $
+                                                each_bar_is_a_pixel miny maxy
     where
     (_, miny) = minimumBy sortGt_by_x data_
     (_, maxy) = maximumBy sortGt_by_x data_
 
+  --count = map (map (map ((map length).(sortBy sortGt_by_y).concat))) $ transpose cut_to_stripes_by_y
+
 --------------------------------------------------------------------------------------------------
 
-{-- ================================================================================================
-================================================================================================ --}
-distance_between_extremums_hist2d :: [[(Float, Float)]] -> [[(Float, Float)]]
-distance_between_extremums_hist2d data_ = histogram_y_per_pixel_multiple_rows $
-                                                              map distance_between_extremums_f data_
-----------------------------------------------------------------------------------------------------
+hist_chain1 :: [[(Float, Float)]] -> [[(Float, Float)]]
+hist_chain1 d = histogram_y_per_pixel_multiple_rows $ map distance_between_extremums_f d
+
+
+{--    |
+       |
+       |
+       |
+       V  --}
 
 {-- ================================================================================================
 ================================================================================================ --}
---step_approximation :: [(Float, Float)] -> [(Float, Float)]
---step_approximation data_ = []
---  where
-
+histogram_y_per_pixel_multiple_rows_f_dyn :: [[(Dynamic, Dynamic)]] -> [[(Processor_data, Processor_data)]]
+histogram_y_per_pixel_multiple_rows_f_dyn  row =
+                     map (
+                          map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0:: Float) ),
+                                           Pd (toDyn y) (show . \z -> fromDyn z (0:: Float) ) ))
+                         ) $
+                     hist_chain1 $
+                     map (
+                           map (\(x, y) -> ((fromDyn x 0):: Float  , (fromDyn y 0):: Float ))
+                         ) row
 ----------------------------------------------------------------------------------------------------
-
-
-
 
 
 

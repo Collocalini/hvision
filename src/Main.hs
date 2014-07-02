@@ -394,7 +394,7 @@ get_demanded_columns arg = (\x -> (read $ head x, read $ last x) ) $ break_to_co
 
 {-- ================================================================================================
 ================================================================================================ --}
-routine::[String] -> IO ()
+routine:: [String] -> IO ()
 routine args
   |is_for_test = justtest
   |is_for_bypass = data_bypass tag_DMap' range
@@ -510,6 +510,8 @@ routine args
         step2 (proc:rest)
             |frame_difference_sequence_processor' proc = frame_difference_sequence_f_dyn:
                                                                                         (step2 rest)
+            |histogram_y_per_pixel_multiple_rows_f_processor' proc =
+                                              histogram_y_per_pixel_multiple_rows_f_dyn:(step2 rest)
             |otherwise = step2 rest
 
      multipageDefault = data_processMultipage tag_DMap' range
