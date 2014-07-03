@@ -34,6 +34,7 @@ import qualified Pipes.Prelude as P
 ---from this project
 import Processors
 import Global
+import ImageManipulation
 ---end of imports from this project
 
 
@@ -390,6 +391,34 @@ get_demanded_columns arg = (\x -> (read $ head x, read $ last x) ) $ break_to_co
 
 
 
+{-- ================================================================================================
+================================================================================================ --}
+get_demanded_coords :: String -> ((Int, Int),(Int, Int))
+get_demanded_coords arg = (\x -> (head x, last x) ) $ map read_cords $ break_to_columns arg $
+                                                                             at_semicolons arg 0
+   where
+        at_semicolons :: String -> Int -> [Int]
+        at_semicolons [] _ = []
+        at_semicolons (x:rest) i
+           |x == ':' = i:at_semicolons rest (i+1)
+           |otherwise = at_semicolons rest (i+1)
+
+        break_to_columns :: String -> [Int] -> [String]
+        break_to_columns str [] = [str]
+        break_to_columns str (i:rest) = (\(s,sr) -> s : (break_to_columns (tail sr) rest) )
+                                                                                    $ splitAt i str
+
+        commas2spaces :: Char -> Char
+        commas2spaces c
+           |c == ',' = ' '
+           |otherwise = c
+
+        read_cords :: String -> (Int, Int)
+        read_cords c = (\x -> (read $ head x, read $ last x) ) $ words $ map commas2spaces c
+
+----------------------------------------------------------------------------------------------------
+
+
 
 
 {-- ================================================================================================
@@ -398,6 +427,7 @@ routine:: [String] -> IO ()
 routine args
   |is_for_test = justtest
   |is_for_bypass = data_bypass tag_DMap' range
+  |from_image_to_data_file = do_from_image_to_data_file
   |there_is_processing = do_processing
   |otherwise = return ()
    {-- |
@@ -450,6 +480,34 @@ routine args
      is_for_bypass
         |"true" == (DMap.findWithDefault "Not found" argument_data_bypass_mode $ tag_DMap') = True
         |otherwise = False
+
+     from_image_to_data_file :: Bool
+     from_image_to_data_file
+        |default_from_image_to_data_file /= (DMap.findWithDefault default_from_image_to_data_file
+                                               argument_from_image_to_data_file $ tag_DMap') = True
+        |otherwise = False
+
+
+     do_from_image_to_data_file = (to_grayscale_io_maybe $ loadImage img) >>= (\i ->
+             (\(l,r) ->
+                iterate_all_data tag_DMap' $ map (toStringTable . stack_output_each_xy)
+                [
+                  map p $ pixels_along_the_line_maybe' i l r
+                ]
+
+             ) $ c
+
+             )
+
+          where
+          img = (DMap.findWithDefault default_from_image_to_data_file
+                                               argument_from_image_to_data_file $ tag_DMap')
+          c = get_demanded_coords (DMap.findWithDefault default_coords argument_coords $ tag_DMap')
+
+          p :: [(Float,Float)] -> [(Processor_data, Processor_data)]
+          p [] = []
+          p i = identity_f_dyn $ map (\(x, y) -> ((toDyn x), (toDyn y)) ) i
+  {----}
 
 -----peculier section , there is processing to do
      there_is_processing :: Bool

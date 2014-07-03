@@ -13,6 +13,8 @@ argument_data_process,
 argument_use_columns,
 argument_repeat_frames_of_output,
 argument_matrix_stacking,
+argument_from_image_to_data_file,
+argument_coords,
 
 default_data_file,
 default_single_data_file,
@@ -26,6 +28,9 @@ default_data_process,
 default_use_columns,
 default_repeat_frames_of_output,
 default_matrix_stacking,
+default_from_image_to_data_file,
+default_coords,
+
 
 identity_i_processor',
 identity_f_processor',
@@ -56,6 +61,11 @@ list_arguments,
 
 eol_char,
 
+sortLt_by_y,
+sortGt_by_y,
+sortLt_by_x,
+sortGt_by_x,
+
 read_file_if_exists,
 
 loadImage,
@@ -82,6 +92,8 @@ argument_data_process = "data-process"
 argument_use_columns = "use-columns"
 argument_repeat_frames_of_output = "repeat-frames-of-output"
 argument_matrix_stacking = "matrix-stacking"
+argument_from_image_to_data_file = "from-image-to-data-file"
+argument_coords = "coords"
 
 
 default_data_file = "data"
@@ -96,7 +108,8 @@ default_use_columns = "1:2"
 default_data_from_stdin = "-"
 default_repeat_frames_of_output = "1"
 default_matrix_stacking = "false"
-
+default_from_image_to_data_file = "-"
+default_coords = "-"
 
 
 
@@ -207,7 +220,9 @@ options =  [
             argument_data_process,
             argument_use_columns,
             argument_data_from_stdin,
-            argument_repeat_frames_of_output
+            argument_repeat_frames_of_output,
+            argument_from_image_to_data_file,
+            argument_coords
            ]
 
 {-- ================================================================================================
@@ -226,7 +241,9 @@ tag_DMap [] = DMap.fromList [
         (argument_use_columns,             default_use_columns),
         (argument_data_from_stdin,         default_data_from_stdin),
         (argument_repeat_frames_of_output, default_repeat_frames_of_output),
-        (argument_matrix_stacking,         default_matrix_stacking)
+        (argument_matrix_stacking,         default_matrix_stacking),
+        (argument_from_image_to_data_file, default_from_image_to_data_file),
+        (argument_coords,                  default_coords)
    ]----]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]
 
 tag_DMap lst = DMap.union (DMap.fromList $ map (\(Just x) -> x) $ list_arguments lst) $
@@ -261,6 +278,41 @@ list_arguments (tag:rest)
 
 eol_char = "\n"
 
+{-- ================================================================================================
+================================================================================================ --}
+sortLt_by_y (_, ly) (_, ry)
+  | ly < ry = GT
+  | ly > ry = LT
+  | ly == ry = EQ
+----------------------------------------------------------------------------------------------------
+
+
+{-- ================================================================================================
+================================================================================================ --}
+sortGt_by_y (_, ly) (_, ry)
+  | ly < ry = LT
+  | ly > ry = GT
+  | ly == ry = EQ
+----------------------------------------------------------------------------------------------------
+
+
+{-- ================================================================================================
+================================================================================================ --}
+sortLt_by_x (lx, _) (rx, _)
+  | lx < rx = GT
+  | lx > rx = LT
+  | lx == rx = EQ
+----------------------------------------------------------------------------------------------------
+
+
+
+{-- ================================================================================================
+================================================================================================ --}
+sortGt_by_x (lx, _) (rx, _)
+  | lx < rx = LT
+  | lx > rx = GT
+  | lx == rx = EQ
+----------------------------------------------------------------------------------------------------
 
 
 {-- ================================================================================================
