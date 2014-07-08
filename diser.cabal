@@ -7,7 +7,7 @@ license-file: license
 copyright:
 maintainer:
 build-depends: JuicyPixels -any, base -any, containers -any,
-               parsec -any, pipes -any
+               deepseq -any, parsec -any, pipes -any, pure-fft -any
 stability:
 homepage:
 package-url:

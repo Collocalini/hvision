@@ -34,6 +34,7 @@ frame_difference_sequence_f,
 frame_difference_sequence_f_dyn,
 
 histogram_y_per_pixel_multiple_rows_f_dyn,
+histogram_y_per_pixel_multiple_rows_dft_f_dyn,
 
 stringToIntList,
 stringToIntList_dyn,
@@ -63,9 +64,13 @@ Processor_data
 
 import Data.List
 import Data.Dynamic
+import Data.Complex
+import GHC.Float
 import qualified Data.Map as DMap
 import ImageManipulation
 import Global
+import Control.DeepSeq
+import Numeric.FFT
 --
 data Processor_data = Pd Dynamic  (Dynamic -> String) --deriving (Show)
 
@@ -107,7 +112,9 @@ identity_f  row = row
        |
        V  --}
 identity_f_dyn :: [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)]
-identity_f_dyn  row = map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0:: Float)),
+identity_f_dyn  row =
+                      identity_f `deepseq`
+                      map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0:: Float)),
                                       Pd (toDyn y) (show . \z -> fromDyn z (0:: Float)) )) $
                       identity_f $
                       map (\(x, y) -> ((fromDyn x 0):: Float , (fromDyn y (0:: Float)) )) row
@@ -157,7 +164,9 @@ derivative_f  row@((x_prev, _):_) = (x_prev, 0):(step1 row)
        |
        V  --}
 derivative_f_dyn :: [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)]
-derivative_f_dyn  row = map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0:: Float) ),
+derivative_f_dyn  row =
+                      derivative_f `deepseq`
+                      map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0:: Float) ),
                                       Pd (toDyn y) (show . \z -> fromDyn z (0:: Float) ) )) $
                       derivative_f $
                       map (\(x, y) -> ((fromDyn x 0):: Float , (fromDyn y 0):: Float )) row
@@ -220,32 +229,38 @@ max_derivative_in_range_xy_f :: [(Float, Float)] -> [(Float, Float)]
 max_derivative_in_range_xy_f row = derivative_in_range_f (-50) 50 Max $ derivative_f row
                       --head_repeats row $
                  --     max_derivative_in_range
-----------------------------------------------------------------------------------------------------
-
-
-max_derivative_in_range_xy_f_dyn :: [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)]
-max_derivative_in_range_xy_f_dyn  row =
-                     map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0:: Float) ),
-                                      Pd (toDyn y) (show . \z -> fromDyn z (0:: Float) ) )) $
-                      max_derivative_in_range_xy_f $
-                      map (\(x, y) -> ((fromDyn x 0):: Float , (fromDyn y 0):: Float )) row
----------------------------------------------------------------------
 {--    |
        |
        |
        |
        V  --}
+
+max_derivative_in_range_xy_f_dyn :: [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)]
+max_derivative_in_range_xy_f_dyn  row =
+                     max_derivative_in_range_xy_f `deepseq`
+                     map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0:: Float) ),
+                                      Pd (toDyn y) (show . \z -> fromDyn z (0:: Float) ) )) $
+                      max_derivative_in_range_xy_f $
+                      map (\(x, y) -> ((fromDyn x 0):: Float , (fromDyn y 0):: Float )) row
+---------------------------------------------------------------------
+
+
+
 {-- ================================================================================================
 ================================================================================================ --}
 min_derivative_in_range_xy_f :: [(Float, Float)] -> [(Float, Float)]
 min_derivative_in_range_xy_f row = derivative_in_range_f (-50) 50 Min $ derivative_f row
                       --head_repeats row $
                  --     max_derivative_in_range
-----------------------------------------------------------------------------------------------------
-
+{--    |
+       |
+       |
+       |
+       V  --}
 
 min_derivative_in_range_xy_f_dyn :: [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)]
 min_derivative_in_range_xy_f_dyn  row =
+                     min_derivative_in_range_xy_f `deepseq`
                      map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0:: Float) ),
                                       Pd (toDyn y) (show . \z -> fromDyn z (0:: Float) ) )) $
                       min_derivative_in_range_xy_f $
@@ -661,6 +676,7 @@ mark_extremums variant input@(prev@(x_prev, y_prev):curr@(x_curr, y_curr):rest)
     -- find extremums
     step2Both :: [(Float, Float)] -> [(Float, Float)]
     step2Both [] = []
+    step2Both (_:[])   = []
     step2Both (_:_:[]) = []
     step2Both (prev@(x_prev, y_prev):curr@(x_curr, y_curr):next@(x_next, y_next):rest)
         |up y_prev y_curr y_next = curr:(step2Both $ curr:next:rest)
@@ -730,6 +746,7 @@ frame_difference_sequence_f (h:input) = --[[(0,0),(0,0),(0,0)]]
 ================================================================================================ --}
 frame_difference_sequence_f_dyn :: [[(Dynamic, Dynamic)]] -> [[(Processor_data, Processor_data)]]
 frame_difference_sequence_f_dyn  row =
+                     frame_difference_sequence_f `deepseq`
                      map (
                           map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0:: Float) ),
                                            Pd (toDyn y) (show . \z -> fromDyn z (0:: Float) ) ))
@@ -833,19 +850,25 @@ histogram_y_per_pixel_multiple_rows data_ = cut_to_stripes_by_y $ cut_to_stripes
 
   one_stripe_y :: [(Float, Float)] -> [(Float, Float)]
   one_stripe_y [] = []
-  one_stripe_y data_ = zip ((miny-1):(each_bar_is_a_pixel miny maxy) ++ [(maxy+1)]) $ map (fromIntegral.length) $
+  one_stripe_y data_ = --zip ((miny-1):(each_bar_is_a_pixel miny maxy) ++ [(maxy+1)]) $
+                       zip ((each_bar_is_a_pixel miny maxy)) $
+                                                map (fromIntegral.length) $
                                                 fall_to_ranges_y (sortBy sortGt_by_y data_) $
                                                 each_bar_is_a_pixel miny maxy
     where
-    (_, miny) = minimumBy sortGt_by_x data_
-    (_, maxy) = maximumBy sortGt_by_x data_
+    (_, miny) = minimumBy sortGt_by_y data_
+    (_, maxy) = maximumBy sortGt_by_y data_
 
-  --count = map (map (map ((map length).(sortBy sortGt_by_y).concat))) $ transpose cut_to_stripes_by_y
+--count = map (map (map ((map length).(sortBy sortGt_by_y).concat))) $ transpose cut_to_stripes_by_y
 
 --------------------------------------------------------------------------------------------------
 
 hist_chain1 :: [[(Float, Float)]] -> [[(Float, Float)]]
 hist_chain1 d = histogram_y_per_pixel_multiple_rows $ map distance_between_extremums_f d
+
+hist_chain2 :: [[(Float, Float)]] -> [[(Float, Float)]]
+hist_chain2 d = map fft_of_column_of_hist $ histogram_y_per_pixel_multiple_rows $
+                                                                  map distance_between_extremums_f d
 
 
 {--    |
@@ -856,8 +879,10 @@ hist_chain1 d = histogram_y_per_pixel_multiple_rows $ map distance_between_extre
 
 {-- ================================================================================================
 ================================================================================================ --}
-histogram_y_per_pixel_multiple_rows_f_dyn :: [[(Dynamic, Dynamic)]] -> [[(Processor_data, Processor_data)]]
+histogram_y_per_pixel_multiple_rows_f_dyn :: [[(Dynamic, Dynamic)]] ->
+                                                                [[(Processor_data, Processor_data)]]
 histogram_y_per_pixel_multiple_rows_f_dyn  row =
+                     hist_chain1 `deepseq`
                      map (
                           map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0:: Float) ),
                                            Pd (toDyn y) (show . \z -> fromDyn z (0:: Float) ) ))
@@ -867,6 +892,42 @@ histogram_y_per_pixel_multiple_rows_f_dyn  row =
                            map (\(x, y) -> ((fromDyn x 0):: Float  , (fromDyn y 0):: Float ))
                          ) row
 ----------------------------------------------------------------------------------------------------
+
+
+
+
+{-- ================================================================================================
+================================================================================================ --}
+histogram_y_per_pixel_multiple_rows_dft_f_dyn :: [[(Dynamic, Dynamic)]] ->
+                                                                [[(Processor_data, Processor_data)]]
+histogram_y_per_pixel_multiple_rows_dft_f_dyn  row =
+                     hist_chain1 `deepseq`
+                     map (
+                          map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0:: Float) ),
+                                           Pd (toDyn y) (show . \z -> fromDyn z (0:: Float) ) ))
+                         ) $
+                     hist_chain2 $
+                     map (
+                           map (\(x, y) -> ((fromDyn x 0):: Float  , (fromDyn y 0):: Float ))
+                         ) row
+----------------------------------------------------------------------------------------------------
+
+
+
+
+
+{-- ================================================================================================
+================================================================================================ --}
+fft_of_column_of_hist:: [(Float, Float)] -> [(Float, Float)]
+fft_of_column_of_hist input = zip l [maximum $ map (double2Float.realPart) $ dft $
+                                                                   map (\i -> float2Double i :+ 0) r]
+   where
+   (l,r) = unzip input
+----------------------------------------------------------------------------------------------------
+
+
+
+
 
 
 
@@ -935,7 +996,7 @@ apply_processors_context_sensitive p i = --[apply_processors [identity_f_dyn] $ 
            ([[ (Processor_data, Processor_data) ]], [[[ (Processor_data, Processor_data) ]]])
   slice []        []                       [] = ([], [])
   slice []        []                       hs = (reverse hs, [])
-  slice r        []                        hs = (reverse hs, reverse r)
+  slice r         []                       hs = (reverse hs, reverse r)
   slice []       ((h:hrest):thisIteration) [] = slice ([hrest])
                                                       (thisIteration)
                                                       ([h])

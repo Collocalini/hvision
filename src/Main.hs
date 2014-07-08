@@ -49,26 +49,42 @@ gnuplot_file tag_DMap = --return ""--unsafeInterleaveIO $
                                                                  ( argument_gnuplot_file) tag_DMap)
 
 
-data_file :: DMap.Map String String -> [IO String]
-data_file tag_DMap = [read_file_if_exists (DMap.findWithDefault "Not found" ( argument_data_file)
+data_file :: DMap.Map String String -> IO [ String]
+data_file tag_DMap = sequence [read_file_if_exists (DMap.findWithDefault "Not found"
+                                                                               ( argument_data_file)
                                                                                          tag_DMap)]
-data_file_range :: DMap.Map String String -> [Int] -> [IO String]
-data_file_range _ [] = []
-data_file_range tag_DMap range = map read_file_if_exists $ map ((DMap.findWithDefault "Not found"
-           ( argument_data_file) $ tag_DMap) ++) $ map show range
+data_file_range :: DMap.Map String String -> [Int] -> IO [ String]
+data_file_range _ [] = return []
+data_file_range tag_DMap range = unsafeInterleaveMapIO read_file_if_exists $
+       map ((DMap.findWithDefault "Not found" ( argument_data_file) $ tag_DMap) ++) $ map show range
+
+
+
+unsafeInterleaveMapIO f (x:xs) = unsafeInterleaveIO $ do
+        y <- f x
+        ys <- unsafeInterleaveMapIO f xs
+        return (y : ys)
+unsafeInterleaveMapIO _ [] = return []
+
+
+
 
 get_range :: String -> [Int]
 get_range [] = []
 get_range range = (\(x,y) -> [(read x)..(read $ drop 2 y)]) $  splitAt
                                                ((\(Just x) -> x) (findIndex (== '.') range)) range
 
-data_file':: [IO String] -> IO [String]
+
+data_file'::  IO [String] -> IO [String]
+data_file' data_file = data_file
+
+{--data_file'::  [IO String] -> IO [String]
 data_file' [] = return []
 data_file' data_file = step1 $ data_file
       where
         step1 :: [IO String] -> IO [String]
         step1 [] = return []
-        step1 (x:rest) = liftM2 (:) x (step1 rest)
+        step1 (x:rest) = liftM2 (:) x (step1 rest)--}
 
 iterate_all_data' :: DMap.Map String String ->  [String] -> IO ()
 iterate_all_data' _ [] = return ()
@@ -570,6 +586,8 @@ routine args
                                                                                         (step2 rest)
             |histogram_y_per_pixel_multiple_rows_f_processor' proc =
                                               histogram_y_per_pixel_multiple_rows_f_dyn:(step2 rest)
+            |histogram_y_per_pixel_multiple_rows_dft_f_processor' proc =
+                                          histogram_y_per_pixel_multiple_rows_dft_f_dyn:(step2 rest)
             |otherwise = step2 rest
 
      multipageDefault = data_processMultipage tag_DMap' range

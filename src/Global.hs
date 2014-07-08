@@ -50,6 +50,7 @@ processor_xm_2_3_f_processor',
 
 frame_difference_sequence_processor',
 histogram_y_per_pixel_multiple_rows_f_processor',
+histogram_y_per_pixel_multiple_rows_dft_f_processor',
 
 flags ,
 
@@ -202,6 +203,12 @@ frame_difference_sequence_processor' str
 histogram_y_per_pixel_multiple_rows_f_processor' :: String -> Bool
 histogram_y_per_pixel_multiple_rows_f_processor' str
    |"histogram_y_per_pixel_multiple_rows_f" == str = True
+   |otherwise = False
+
+
+histogram_y_per_pixel_multiple_rows_dft_f_processor' :: String -> Bool
+histogram_y_per_pixel_multiple_rows_dft_f_processor' str
+   |"histogram_y_per_pixel_multiple_rows_dft_f" == str = True
    |otherwise = False
 
 
