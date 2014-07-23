@@ -36,6 +36,10 @@ frame_difference_sequence_f_dyn,
 histogram_y_per_pixel_multiple_rows_f_dyn,
 histogram_y_per_pixel_multiple_rows_dft_f_dyn,
 
+filter_range_f_dyn,
+
+histogram_ad_hock_f_dyn,  -- ad hock
+
 stringToIntList,
 stringToIntList_dyn,
 intListToString,
@@ -75,6 +79,8 @@ import Numeric.FFT
 data Processor_data = Pd Dynamic  (Dynamic -> String) --deriving (Show)
 
 data MarkExtremums = Max|Min|Both deriving (Eq)
+
+data MarkRanges = Lb|Rb|Il|N deriving (Eq)
 
 --eol_char = "\n"
 
@@ -602,6 +608,9 @@ distance_between_extremums_f  row@((x_prev, _):_) = --step2 row step1_
         step1_ = step1 mark_extremums_          --- !!! shortcut
         mark_extremums_ = mark_extremums Both row    --- !!! shortcut
 
+        in_range :: Float -> (Float, Float) -> Bool
+        in_range lim (x, _) = x <= lim
+
 {--    |
        |
        |
@@ -614,6 +623,39 @@ distance_between_extremums_f_dyn  row =
                       distance_between_extremums_f $
                       map (\(x, y) -> ((fromDyn x 0):: Float  , (fromDyn y 0):: Float )) row
 ---------------------------------------------------------------------
+
+
+
+
+
+{-- ================================================================================================
+================================================================================================ --}
+filter_range_f :: [(Float, Float)] -> [(Float, Float)]
+filter_range_f  [] = []
+filter_range_f  row = --step1 $
+                      filter (in_range_y 1.0) $ distance_between_extremums_f row
+    where
+
+    in_range_y :: Float -> (Float, Float) -> Bool
+    in_range_y lim (_, y) = y == lim
+
+    step1 :: [(Float, Float)] -> [(Float, Float)]
+    step1 [] = [(0,0)]
+    step1 otherwise = otherwise
+
+{--    |
+       |
+       |
+       |
+       V  --}
+filter_range_f_dyn :: [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)]
+filter_range_f_dyn  row =
+                     map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0:: Float) ),
+                                      Pd (toDyn y) (show . \z -> fromDyn z (0:: Float) ) )) $
+                      filter_range_f $
+                      map (\(x, y) -> ((fromDyn x 0):: Float  , (fromDyn y 0):: Float )) row
+---------------------------------------------------------------------
+
 
 
 
@@ -871,6 +913,13 @@ hist_chain2 d = map fft_of_column_of_hist $ histogram_y_per_pixel_multiple_rows 
                                                                   map distance_between_extremums_f d
 
 
+hist_chain3 :: [[(Float, Float)]] -> [[(Float, Float)]]
+hist_chain3 d = histogram_y_per_pixel_multiple_rows $ map filter_range_f d
+
+
+--hist_chain4 :: [[(Float, Float)]] -> [[(Float, Float)]]
+--hist_chain4 d = histogram_y_per_pixel_multiple_rows $ map filter_range_f d
+
 {--    |
        |
        |
@@ -918,14 +967,100 @@ histogram_y_per_pixel_multiple_rows_dft_f_dyn  row =
 
 {-- ================================================================================================
 ================================================================================================ --}
+histogram_ad_hock_f_dyn :: [[(Dynamic, Dynamic)]] ->
+                                                                [[(Processor_data, Processor_data)]]
+histogram_ad_hock_f_dyn  row =
+                     hist_chain2 `deepseq`
+                     map (
+                          map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0:: Float) ),
+                                           Pd (toDyn y) (show . \z -> fromDyn z (0:: Float) ) ))
+                         ) $
+                     hist_chain2 $
+                     map (
+                           map (\(x, y) -> ((fromDyn x 0):: Float  , (fromDyn y 0):: Float ))
+                         ) row
+----------------------------------------------------------------------------------------------------
+
+
+
+
+
+{-- ================================================================================================
+================================================================================================ --}
 fft_of_column_of_hist:: [(Float, Float)] -> [(Float, Float)]
-fft_of_column_of_hist input = zip l [maximum $ map (double2Float.realPart) $ dft $
-                                                                   map (\i -> float2Double i :+ 0) r]
+fft_of_column_of_hist input = ---zip l [maximum $ map (double2Float.realPart) $ dft $
+                              --                                  map (\i -> float2Double i :+ 0) r]
+                              zip [0..] $ map (double2Float.realPart) $ dft $
+                                                                   map (\i -> float2Double i :+ 0) r
    where
    (l,r) = unzip input
 ----------------------------------------------------------------------------------------------------
 
 
+
+
+
+
+{-- ================================================================================================
+================================================================================================ --}
+fill_holes:: [(Float, Float)] -> [(Float, Float)]
+fill_holes []     = []
+fill_holes row = interpolate (to_pairs $ put_brackets $ to_threes row)
+                             (filter (\(_,r)-> r/=0) row)
+  where
+  to_threes :: [(a, a)] -> [((a,a),(a,a),(a,a))]
+  to_threes [] = []
+  to_threes [a] = []
+  to_threes [a,b] = []
+  to_threes (l:c:r:rest) = (l,c,r):(to_threes $ c:r:rest)
+
+  put_brackets :: [((Float,Float),(Float,Float),(Float,Float))] -> [((Float,Float),MarkRanges)]
+  put_brackets row = filter (\(_,r)-> r/=N) $ map rcg row
+
+
+  rcg :: ((Float,Float),(Float,Float),(Float,Float)) -> ((Float,Float), MarkRanges)
+  rcg ((_,lz),p@(_,pz),(_,rz))
+    |(lz == 0)&&(pz /= 0)&&(rz /= 0) = (p, Lb)
+    |(lz /= 0)&&(pz /= 0)&&(rz == 0) = (p, Rb)
+    |(lz == 0)&&(pz /= 0)&&(rz == 0) = (p, Il)
+    |otherwise = (p, N)
+
+  to_pairs :: [((Float,Float),MarkRanges)] -> [((Float,Float), (Float,Float))]
+  to_pairs (f@(_,Rb):rest) = to_pairs_step1 rest
+  to_pairs row = to_pairs_step1 row
+
+  to_pairs_step1 :: [((Float,Float),MarkRanges)] -> [((Float,Float), (Float,Float))]
+  to_pairs_step1 []   = []
+  to_pairs_step1 [_]  = []
+  to_pairs_step1 [(ap,Rb),(bp,Lb)] = [(ap,bp)]
+  to_pairs_step1 [_,_]             = []
+  to_pairs_step1 (a@(ap,Rb):b@(bp,Lb):rest) = (ap,bp):(to_pairs_step1 $ b:rest)
+  to_pairs_step1 (a@(ap,Rb):b@(bp,Il):rest) = (ap,bp):(to_pairs_step1 $ b:rest)
+  to_pairs_step1 (a@(ap,Il):b@(bp,Lb):rest) = (ap,bp):(to_pairs_step1 $ b:rest)
+  to_pairs_step1 (a@(ap,Il):b@(bp,Il):rest) = (ap,bp):(to_pairs_step1 $ b:rest)
+  to_pairs_step1 (_:b:rest)                 = (to_pairs_step1 $ b:rest)
+
+  interpolate :: [((Float,Float), (Float,Float))] -> [(Float, Float)] -> [(Float,Float)]
+  interpolate _ []  = []
+  interpolate _ [_] = []
+  interpolate [(a,b)] [ar,br]
+    |(a == ar)&&(b == br) = coordinates_along_the_line_f a b
+    |otherwise = []
+
+  interpolate fst@([(a,b)]) (ar:br:row)
+    |(a == ar)&&(b == br) = (coordinates_along_the_line_f a b) ++ row
+    |(a /= ar)||(b /= br) = interpolate fst (br:row)
+    |otherwise = []
+
+  interpolate fst@((a,b):rest) (ar:br:row)
+    |(a == ar)&&(b == br) = (coordinates_along_the_line_f a b) ++ (interpolate rest row)
+    |(a /= ar)||(b /= br) = interpolate fst (br:row)
+    |otherwise = []
+
+  interpolate _ _ = []
+
+  --coordinates_along_the_line_f
+----------------------------------------------------------------------------------------------------
 
 
 

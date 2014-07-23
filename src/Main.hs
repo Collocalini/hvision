@@ -571,6 +571,7 @@ routine args
             |processor_xm_2_f_processor' proc = processor_xm_2_f_dyn:(step2 rest)
             |processor_xm_2_2_f_processor' proc = processor_xm_2_2_f_dyn:(step2 rest)
             |processor_xm_2_3_f_processor' proc = processor_xm_2_3_f_dyn:(step2 rest)
+           -- |ad_hock_f_processor' proc = filter_range_f_dyn:(step2 rest)
             |otherwise = step2 rest
 
 
@@ -588,6 +589,7 @@ routine args
                                               histogram_y_per_pixel_multiple_rows_f_dyn:(step2 rest)
             |histogram_y_per_pixel_multiple_rows_dft_f_processor' proc =
                                           histogram_y_per_pixel_multiple_rows_dft_f_dyn:(step2 rest)
+            |ad_hock_f_processor' proc = histogram_ad_hock_f_dyn:(step2 rest)
             |otherwise = step2 rest
 
      multipageDefault = data_processMultipage tag_DMap' range

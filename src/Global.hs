@@ -52,6 +52,8 @@ frame_difference_sequence_processor',
 histogram_y_per_pixel_multiple_rows_f_processor',
 histogram_y_per_pixel_multiple_rows_dft_f_processor',
 
+ad_hock_f_processor',
+
 flags ,
 
 options,
@@ -209,6 +211,12 @@ histogram_y_per_pixel_multiple_rows_f_processor' str
 histogram_y_per_pixel_multiple_rows_dft_f_processor' :: String -> Bool
 histogram_y_per_pixel_multiple_rows_dft_f_processor' str
    |"histogram_y_per_pixel_multiple_rows_dft_f" == str = True
+   |otherwise = False
+
+
+ad_hock_f_processor' :: String -> Bool
+ad_hock_f_processor' str
+   |"ad_hock_f" == str = True
    |otherwise = False
 
 
