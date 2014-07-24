@@ -917,8 +917,10 @@ hist_chain3 :: [[(Float, Float)]] -> [[(Float, Float)]]
 hist_chain3 d = histogram_y_per_pixel_multiple_rows $ map filter_range_f d
 
 
---hist_chain4 :: [[(Float, Float)]] -> [[(Float, Float)]]
---hist_chain4 d = histogram_y_per_pixel_multiple_rows $ map filter_range_f d
+hist_chain4 :: [[(Float, Float)]] -> [[(Float, Float)]]
+hist_chain4 d = --map fill_holes $ histogram_y_per_pixel_multiple_rows $
+                  map fft_of_column_of_hist $ to_same_length $ map fill_holes $ histogram_y_per_pixel_multiple_rows $
+                                                                  map distance_between_extremums_f d
 
 {--    |
        |
@@ -970,12 +972,14 @@ histogram_y_per_pixel_multiple_rows_dft_f_dyn  row =
 histogram_ad_hock_f_dyn :: [[(Dynamic, Dynamic)]] ->
                                                                 [[(Processor_data, Processor_data)]]
 histogram_ad_hock_f_dyn  row =
-                     hist_chain2 `deepseq`
+                     --hist_chain2 `deepseq`
+                     hist_chain4 `deepseq`
                      map (
                           map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0:: Float) ),
                                            Pd (toDyn y) (show . \z -> fromDyn z (0:: Float) ) ))
                          ) $
-                     hist_chain2 $
+                     --hist_chain2 $
+                     hist_chain4 $
                      map (
                            map (\(x, y) -> ((fromDyn x 0):: Float  , (fromDyn y 0):: Float ))
                          ) row
@@ -990,7 +994,9 @@ histogram_ad_hock_f_dyn  row =
 fft_of_column_of_hist:: [(Float, Float)] -> [(Float, Float)]
 fft_of_column_of_hist input = ---zip l [maximum $ map (double2Float.realPart) $ dft $
                               --                                  map (\i -> float2Double i :+ 0) r]
-                              zip [0..] $ map (double2Float.realPart) $ dft $
+                              zip [0..] $ map (double2Float.phase) $
+                                --filter (\x -> ((magnitude x) < 20)&&((magnitude x) > -20)) $
+                                                                   dft $
                                                                    map (\i -> float2Double i :+ 0) r
    where
    (l,r) = unzip input
@@ -1033,6 +1039,7 @@ fill_holes row = interpolate (to_pairs $ put_brackets $ to_threes row)
   to_pairs_step1 []   = []
   to_pairs_step1 [_]  = []
   to_pairs_step1 [(ap,Rb),(bp,Lb)] = [(ap,bp)]
+  to_pairs_step1 [(ap,Il),(bp,Il)] = [(ap,bp)]
   to_pairs_step1 [_,_]             = []
   to_pairs_step1 (a@(ap,Rb):b@(bp,Lb):rest) = (ap,bp):(to_pairs_step1 $ b:rest)
   to_pairs_step1 (a@(ap,Rb):b@(bp,Il):rest) = (ap,bp):(to_pairs_step1 $ b:rest)
@@ -1042,25 +1049,62 @@ fill_holes row = interpolate (to_pairs $ put_brackets $ to_threes row)
 
   interpolate :: [((Float,Float), (Float,Float))] -> [(Float, Float)] -> [(Float,Float)]
   interpolate _ []  = []
-  interpolate _ [_] = []
+  interpolate _ [_] = row
   interpolate [(a,b)] [ar,br]
     |(a == ar)&&(b == br) = coordinates_along_the_line_f a b
-    |otherwise = []
+    |otherwise = row
 
-  interpolate fst@([(a,b)]) (ar:br:row)
-    |(a == ar)&&(b == br) = (coordinates_along_the_line_f a b) ++ row
-    |(a /= ar)||(b /= br) = interpolate fst (br:row)
-    |otherwise = []
+  interpolate fst@([(a,b)]) (ar:br:rowl)
+    |(a == ar)&&(b == br) = (coordinates_along_the_line_f a b) ++ rowl
+    |(a /= ar)||(b /= br) = ar:(interpolate fst (br:rowl))
+    |otherwise = row
 
-  interpolate fst@((a,b):rest) (ar:br:row)
-    |(a == ar)&&(b == br) = (coordinates_along_the_line_f a b) ++ (interpolate rest row)
-    |(a /= ar)||(b /= br) = interpolate fst (br:row)
-    |otherwise = []
+  interpolate fst@((a,b):rest) (ar:br:rowl)
+    |(a == ar)&&(b == br) = (coordinates_along_the_line_f a b) ++ (interpolate rest rowl)
+    |(a /= ar)||(b /= br) = ar:(interpolate fst (br:rowl))
+    |otherwise = row
 
-  interpolate _ _ = []
-
-  --coordinates_along_the_line_f
+  interpolate _ _ = row
 ----------------------------------------------------------------------------------------------------
+
+
+
+
+{-- ================================================================================================
+================================================================================================ --}
+to_same_length:: [[(Float, Float)]] -> [[(Float, Float)]]
+to_same_length []     = []
+to_same_length row = map add_preffix_and_suffix $ zip3 row' mins maxs
+  where
+  (gminy,_) = minimumBy sortGt_by_x mins
+  (gmaxy,_) = maximumBy sortGt_by_x maxs
+
+  mins = map (minimumBy sortGt_by_x) row'
+  maxs = map (maximumBy sortGt_by_x) row'
+
+  row' = map (sortBy sortGt_by_x) $ filter (/=[]) row
+
+  add_preffix_and_suffix :: ([(Float, Float)],(Float,Float),(Float,Float)) -> [(Float, Float)]
+  add_preffix_and_suffix ([],_,_)  = []
+  add_preffix_and_suffix (row,(lminy,lminz),(lmaxy,lmaxz))
+    |lminy == gminy = step1 row
+    |lminy > gminy = step1 $ zip pry prz ++ tail row
+    |otherwise = row
+    where
+    step1 row
+      |lmaxy == gmaxy = row
+      |lmaxy < gmaxy = (init row) ++ zip sfy sfz
+      |otherwise = row
+
+    pry = [gminy .. lminy]
+    st  = (abs lminz) / (fromIntegral $ length pry)
+    prz = [0,st.. lminz] ++ repeat lminz
+
+    sfy = [lmaxy..gmaxy]
+    st' = (abs lmaxz) / (fromIntegral $ length sfy)
+    sfz = [lmaxz, lmaxz-st' .. 0] ++ repeat 0
+----------------------------------------------------------------------------------------------------
+
 
 
 
