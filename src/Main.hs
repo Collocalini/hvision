@@ -34,6 +34,7 @@ import qualified Pipes.Prelude as P
 ---from this project
 import Processors
 import Global
+import Cmd_arguments
 import ImageManipulation
 ---end of imports from this project
 
@@ -181,6 +182,11 @@ data_process_common tag_DMap processors adaptTo x = iterate_all_data tag_DMap $
                     map (toStringTable . stack_output . (apply_processors (processors)) . adaptTo) x
 
 ----------------------------------------------------------------------------------------------------
+
+
+
+
+
 {-- common steps in data_process_range_sensitive
 ===============================================================================================  --}
 data_process_common_range_sensitive :: DMap.Map String String ->
@@ -371,68 +377,11 @@ data_processMultipage_matrix_output tag_DMap range processors adaptTo prepare_in
 
 
 
-{-- ================================================================================================
-================================================================================================ --}
-get_demanded_processors :: String -> [String]
-get_demanded_processors arg = words $ map commas2spaces arg
-   where
-    commas2spaces :: Char -> Char
-    commas2spaces c
-       |c == ',' = ' '
-       |otherwise = c
---------------------------------------------------------------------------------------------------
 
 
 
 
 
-{-- ================================================================================================
-================================================================================================ --}
-get_demanded_columns :: String -> (Int, Int)
-get_demanded_columns arg = (\x -> (read $ head x, read $ last x) ) $ break_to_columns arg $
-                                                                               at_semicolons arg 0
-    where
-        at_semicolons :: String -> Int -> [Int]
-        at_semicolons [] _ = []
-        at_semicolons (x:rest) i
-           |x == ':' = i:at_semicolons rest (i+1)
-           |otherwise = at_semicolons rest (i+1)
-
-        break_to_columns :: String -> [Int] -> [String]
-        break_to_columns str [] = [str]
-        break_to_columns str (i:rest) = (\(s,sr) -> s : (break_to_columns (tail sr) rest) )
-                                                                                    $ splitAt i str
-
---------------------------------------------------------------------------------------------------
-
-
-
-{-- ================================================================================================
-================================================================================================ --}
-get_demanded_coords :: String -> ((Int, Int),(Int, Int))
-get_demanded_coords arg = (\x -> (head x, last x) ) $ map read_cords $ break_to_columns arg $
-                                                                             at_semicolons arg 0
-   where
-        at_semicolons :: String -> Int -> [Int]
-        at_semicolons [] _ = []
-        at_semicolons (x:rest) i
-           |x == ':' = i:at_semicolons rest (i+1)
-           |otherwise = at_semicolons rest (i+1)
-
-        break_to_columns :: String -> [Int] -> [String]
-        break_to_columns str [] = [str]
-        break_to_columns str (i:rest) = (\(s,sr) -> s : (break_to_columns (tail sr) rest) )
-                                                                                    $ splitAt i str
-
-        commas2spaces :: Char -> Char
-        commas2spaces c
-           |c == ',' = ' '
-           |otherwise = c
-
-        read_cords :: String -> (Int, Int)
-        read_cords c = (\x -> (read $ head x, read $ last x) ) $ words $ map commas2spaces c
-
-----------------------------------------------------------------------------------------------------
 
 
 
@@ -546,51 +495,7 @@ routine args
         |otherwise = oldDefault
    {--      --}
 
-     recognizeDemanded_processors :: [String] ->
-                           [( [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)] )]
-     recognizeDemanded_processors [] = []
-     recognizeDemanded_processors proc = step2 proc
-        where
-        step2 :: [String] -> [( [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)] )]
-        step2 [] = []
-        step2 (proc:rest)
-            |identity_i_processor' proc = identity_i_dyn:(step2 rest)
-            |identity_f_processor' proc = identity_f_dyn:(step2 rest)
-            |derivative_f_processor' proc = derivative_f_dyn:(step2 rest)
-            |derivative_i_processor' proc = derivative_i_dyn:(step2 rest)
-            |max_derivative_in_range_xy_f_processor' proc = max_derivative_in_range_xy_f_dyn:
-                                                                                        (step2 rest)
-            |min_derivative_in_range_xy_f_processor' proc = min_derivative_in_range_xy_f_dyn:
-                                                                                        (step2 rest)
-            |distance_between_extremums_f_processor' proc = distance_between_extremums_f_dyn:
-                                                                                        (step2 rest)
-            |extremums_f_processor' proc = extremums_f_dyn:(step2 rest)
-            |processor_x_2_f_processor' proc = processor_x_2_f_dyn:(step2 rest)
-            |processor_x_2_2_f_processor' proc = processor_x_2_2_f_dyn:(step2 rest)
-            |processor_x_2_3_f_processor' proc = processor_x_2_3_f_dyn:(step2 rest)
-            |processor_xm_2_f_processor' proc = processor_xm_2_f_dyn:(step2 rest)
-            |processor_xm_2_2_f_processor' proc = processor_xm_2_2_f_dyn:(step2 rest)
-            |processor_xm_2_3_f_processor' proc = processor_xm_2_3_f_dyn:(step2 rest)
-           -- |ad_hock_f_processor' proc = filter_range_f_dyn:(step2 rest)
-            |otherwise = step2 rest
 
-
-     recognizeDemanded_processors_frame_context_sensitive :: [String] ->
-                           [( [[(Dynamic, Dynamic)]] -> [[(Processor_data, Processor_data)]] )]
-     recognizeDemanded_processors_frame_context_sensitive [] = []
-     recognizeDemanded_processors_frame_context_sensitive proc = step2 proc
-        where
-        step2 :: [String] -> [( [[(Dynamic, Dynamic)]] -> [[(Processor_data, Processor_data)]] )]
-        step2 [] = []
-        step2 (proc:rest)
-            |frame_difference_sequence_processor' proc = frame_difference_sequence_f_dyn:
-                                                                                        (step2 rest)
-            |histogram_y_per_pixel_multiple_rows_f_processor' proc =
-                                              histogram_y_per_pixel_multiple_rows_f_dyn:(step2 rest)
-            |histogram_y_per_pixel_multiple_rows_dft_f_processor' proc =
-                                          histogram_y_per_pixel_multiple_rows_dft_f_dyn:(step2 rest)
-            |ad_hock_f_processor' proc = histogram_ad_hock_f_dyn:(step2 rest)
-            |otherwise = step2 rest
 
      multipageDefault = data_processMultipage tag_DMap' range
                        (

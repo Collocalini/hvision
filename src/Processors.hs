@@ -61,6 +61,8 @@ stack_output_matrix,
 toStringTable,
 toStringTable_matrix,
 --toStringTable_matrix_context,
+recognizeDemanded_processors,
+recognizeDemanded_processors_frame_context_sensitive,
 Processor_data
 
 
@@ -75,8 +77,8 @@ import ImageManipulation
 import Global
 import Control.DeepSeq
 import Numeric.FFT
+import Processors_common
 --
-data Processor_data = Pd Dynamic  (Dynamic -> String) --deriving (Show)
 
 data MarkExtremums = Max|Min|Both deriving (Eq)
 
@@ -1488,10 +1490,51 @@ xy2string_fi x = unzip $ map (\(x,y) -> (show x, show y) ) x
 ------------------ end of ------ put n graphs as m columns -------------------------------------
 
 
+recognizeDemanded_processors :: [String] ->
+                           [( [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)] )]
+recognizeDemanded_processors [] = []
+recognizeDemanded_processors proc = step2 proc
+    where
+    step2 :: [String] -> [( [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)] )]
+    step2 [] = []
+    step2 (proc:rest)
+        |identity_i_processor' proc = identity_i_dyn:(step2 rest)
+        |identity_f_processor' proc = identity_f_dyn:(step2 rest)
+        |derivative_f_processor' proc = derivative_f_dyn:(step2 rest)
+        |derivative_i_processor' proc = derivative_i_dyn:(step2 rest)
+        |max_derivative_in_range_xy_f_processor' proc = max_derivative_in_range_xy_f_dyn:
+                                                                                    (step2 rest)
+        |min_derivative_in_range_xy_f_processor' proc = min_derivative_in_range_xy_f_dyn:
+                                                                                    (step2 rest)
+        |distance_between_extremums_f_processor' proc = distance_between_extremums_f_dyn:
+                                                                                    (step2 rest)
+        |extremums_f_processor' proc = extremums_f_dyn:(step2 rest)
+        |processor_x_2_f_processor' proc = processor_x_2_f_dyn:(step2 rest)
+        |processor_x_2_2_f_processor' proc = processor_x_2_2_f_dyn:(step2 rest)
+        |processor_x_2_3_f_processor' proc = processor_x_2_3_f_dyn:(step2 rest)
+        |processor_xm_2_f_processor' proc = processor_xm_2_f_dyn:(step2 rest)
+        |processor_xm_2_2_f_processor' proc = processor_xm_2_2_f_dyn:(step2 rest)
+        |processor_xm_2_3_f_processor' proc = processor_xm_2_3_f_dyn:(step2 rest)
+       -- |ad_hock_f_processor' proc = filter_range_f_dyn:(step2 rest)
+        |otherwise = step2 rest
 
 
-
-
+recognizeDemanded_processors_frame_context_sensitive :: [String] ->
+                       [( [[(Dynamic, Dynamic)]] -> [[(Processor_data, Processor_data)]] )]
+recognizeDemanded_processors_frame_context_sensitive [] = []
+recognizeDemanded_processors_frame_context_sensitive proc = step2 proc
+    where
+    step2 :: [String] -> [( [[(Dynamic, Dynamic)]] -> [[(Processor_data, Processor_data)]] )]
+    step2 [] = []
+    step2 (proc:rest)
+        |frame_difference_sequence_processor' proc = frame_difference_sequence_f_dyn:
+                                                                                    (step2 rest)
+        |histogram_y_per_pixel_multiple_rows_f_processor' proc =
+                                          histogram_y_per_pixel_multiple_rows_f_dyn:(step2 rest)
+        |histogram_y_per_pixel_multiple_rows_dft_f_processor' proc =
+                                      histogram_y_per_pixel_multiple_rows_dft_f_dyn:(step2 rest)
+        |ad_hock_f_processor' proc = histogram_ad_hock_f_dyn:(step2 rest)
+        |otherwise = step2 rest
 
 
 
