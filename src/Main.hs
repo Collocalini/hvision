@@ -33,9 +33,12 @@ import qualified Pipes.Prelude as P
 
 ---from this project
 import Processors
+import Processors_common
 import Global
+import Image_loading
 import Cmd_arguments
 import ImageManipulation
+import Recognize_demanded_processors
 ---end of imports from this project
 
 

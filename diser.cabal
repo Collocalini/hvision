@@ -14,7 +14,8 @@ executable diser
     buildable: True
     extensions: CPP
     hs-source-dirs: src
-    other-modules: Cmd_arguments Processors ImageManipulation AdHoc
-                   Global Processors_common Processors2d Video
+    other-modules: Cmd_arguments Image_loading Processors
+                   ImageManipulation AdHoc Global Processors_common Processors2d
+                   Recognize_demanded_processors Video
     ghc-options: -Wall -fwarn-tabs
  

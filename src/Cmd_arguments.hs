@@ -49,12 +49,17 @@ options,
 tag_DMap,
 
 list_arguments,
+
+get_demanded_processors,
+get_demanded_columns,
+get_demanded_coords,
 ) where
 
 import qualified Data.Map as DMap
 import Data.Dynamic
 import Processors_common
 import Processors
+import Recognize_demanded_processors
 
 data InputArguments = InputArguments {
       data_file :: Maybe FilePath
@@ -96,6 +101,7 @@ inputArgs tm = InputArguments {
   where
   data_file'
     |s/= default_data_file = Just s
+    |s== "" = Nothing
     |otherwise = Nothing
     where
     s = (DMap.findWithDefault default_data_file argument_data_file tm)
@@ -114,14 +120,15 @@ inputArgs tm = InputArguments {
     s = (DMap.findWithDefault default_multipage_data_file argument_multipage_data_file tm)
 
   data_from_stdin'
-    |s == "True" = Just True
-    |s == "False" = Just False
+    |s/= default_data_from_stdin = Just $ read s
+    |s== "" = Nothing
     |otherwise = Nothing
     where
     s = (DMap.findWithDefault default_data_from_stdin argument_data_from_stdin tm)
 
   gnuplot_file'
     |s/= default_gnuplot_file = Just s
+    |s== "" = Nothing
     |otherwise = Nothing
     where
     s = (DMap.findWithDefault default_gnuplot_file argument_gnuplot_file tm)
@@ -147,41 +154,44 @@ inputArgs tm = InputArguments {
     s = (DMap.findWithDefault default_data_bypass_mode argument_data_bypass_mode tm)
 
   data_process'
-    |s/= default_data_process = Just recognizeDemanded_processors $ get_demanded_processors
-                       (DMap.findWithDefault default_data_process argument_data_process tm)
+    |s/= default_data_process = Just $ recognizeDemanded_processors $ get_demanded_processors
+                                (DMap.findWithDefault default_data_process argument_data_process tm)
     |otherwise = Nothing
     where
     s = (DMap.findWithDefault default_data_process argument_data_process tm)
 
   use_columns'
-    |s/= default_ = Just s
+    |s/= "" = Just $ get_demanded_columns s  -- empty "" is not a mistake
     |otherwise = Nothing
     where
-    s = (DMap.findWithDefault default_ argument_ tm)
+    s = (DMap.findWithDefault default_use_columns argument_use_columns tm)
 
   repeat_frames_of_output'
-    |s/= default_ = Just s
+    |s/= "" = Just $ read s  -- empty "" is not a mistake
     |otherwise = Nothing
     where
-    s = (DMap.findWithDefault default_ argument_ tm)
+    s = (DMap.findWithDefault default_repeat_frames_of_output argument_repeat_frames_of_output tm)
 
   matrix_stacking'
-    |s/= default_ = Just s
+    |s == "True" = Just True
+    |s == "False" = Just False
     |otherwise = Nothing
     where
-    s = (DMap.findWithDefault default_ argument_ tm)
+    s = (DMap.findWithDefault default_matrix_stacking argument_matrix_stacking tm)
 
   from_image_to_data_file'
-    |s/= default_ = Just s
+    |s/= default_from_image_to_data_file = Just s
+    |s== "" = Nothing
     |otherwise = Nothing
     where
-    s = (DMap.findWithDefault default_ argument_ tm)
+    s = (DMap.findWithDefault default_from_image_to_data_file argument_from_image_to_data_file tm)
 
   coords'
-    |s/= default_ = Just s
+    |s/= default_coords = Just $ get_demanded_coords s
+    |s== "" = Nothing
     |otherwise = Nothing
     where
-    s = (DMap.findWithDefault default_ argument_ tm)
+    s = (DMap.findWithDefault default_coords argument_coords tm)
 
 
 

@@ -18,14 +18,38 @@ module Video (
 
 import Codec.FFmpeg
 
+
+
+data_file_v :: Maybe FilePath -> IO [ImageY8]
+data_file_v Nothing = return []
+data_file_v (Just tag_DMap) = sequence [read_file_if_exists (DMap.findWithDefault "Not found"
+                                                                               ( argument_data_file)
+                                                                                         tag_DMap)]
+   step1 :: FilePath -> [IO ImageY8]
+   step1 vidFile =
+     do initFFmpeg
+        (getFrame, cleanup) <- imageReaderTime vidFile
+        --frame <- getFrame
+        --cleanup
+
+   --  where
+
+   step2 :: IO (Maybe (Image p, Double) -> [IO ImageY8]
+   step2 gf = do
+     frame <- gf
+     case frame of
+       Just (avf,ts) -> return (ImageY8 avf):(step2 gf)
+       Nothing -> return []
+
+
 {-- common steps in data_processM,
                     data_processMultipage,
                     data_processMultipage_fromStdin  functions
 ===============================================================================================  --}
 data_process_ffmpeg ::State InputArguments ->
                                 [([(Dynamic, Dynamic)] -> [ (Processor_data, Processor_data) ])] ->
-                                (String -> [(Dynamic, Dynamic)] ) ->
-                                [String] -> -- input
+                                (ImageY8 -> [(Dynamic, Dynamic)] ) ->
+                                [ImageY8] -> -- input
                                 IO ()
 data_process_ffmpeg tag_DMap processors adaptTo x = iterate_all_data tag_DMap $
                     map (toStringTable . stack_output . (apply_processors (processors)) . adaptTo) x
