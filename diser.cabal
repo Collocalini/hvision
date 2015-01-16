@@ -9,12 +9,13 @@ data-dir: ""
  
 executable diser
     build-depends: JuicyPixels -any, base -any, containers -any,
-                   deepseq -any, parsec -any, pipes -any, pure-fft -any
+                   deepseq -any, matrix -any, parsec -any, pipes -any, pure-fft -any
     main-is: Main.hs
     buildable: True
     extensions: CPP
     hs-source-dirs: src
-    other-modules: Cmd_arguments Processors ImageManipulation AdHoc
-                   Global Processors_common Processors2d Video
+    other-modules: Processors ImageManipulation Image_loading AdHoc
+                   Global Processors_common Processors2d Recognize_demanded_processors
+                   Video Cmd_arguments
     ghc-options: -Wall -fwarn-tabs
  
