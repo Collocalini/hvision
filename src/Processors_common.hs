@@ -29,6 +29,7 @@ stringToFloatList_mn_dyn,
 intListToString_2to3,
 floatListToString_2to3,
 apply_processors,
+apply_processors_v,
 apply_processors_context_sensitive,
 stack_output,
 stack_output_each_xy,
@@ -67,9 +68,9 @@ apply_processors (processor:rest) input = (processor input):(apply_processors re
 {-- ================================================================================================
 ================================================================================================ --}
 apply_processors_v :: [(Matrix Rational) -> (Matrix Rational)] ->
-                                     Matrix Rational -> [Matrix Rational]
-apply_processors_v [] _ = []
-apply_processors_v (processor:rest) input = (processor input):(apply_processors_v rest input)
+                                     Matrix Rational -> Maybe (Matrix Rational)
+apply_processors_v [] _ = Nothing
+apply_processors_v (processor:rest) input = apply_processors_v rest $ processor input
 ----------------------------------------------------------------------------------------------------
 
 

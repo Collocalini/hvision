@@ -19,7 +19,7 @@ main
 ) where
 
 import System.IO
-import System.IO.Unsafe
+
 import System.Environment
 import Data.List
 import Data.Dynamic
@@ -36,63 +36,16 @@ import Processors
 import Processors_common
 import Global
 import Image_loading
-import Cmd_arguments
+import qualified Cmd_arguments as CmdA
 import ImageManipulation
 import Recognize_demanded_processors
+import Data_iterators
+import Video
 ---end of imports from this project
 
 
 
 
---gnuplot_file :: DMap.Map String String -> IO String
---gnuplot_file tag_DMap = \x -> x =<< gnuplot_file' tag_DMap
-
-gnuplot_file :: DMap.Map String String -> IO String
-gnuplot_file tag_DMap = --return ""--unsafeInterleaveIO $
-                        read_file_if_exists (DMap.findWithDefault "Not found"
-                                                                 ( argument_gnuplot_file) tag_DMap)
-
-
-data_file :: DMap.Map String String -> IO [ String]
-data_file tag_DMap = sequence [read_file_if_exists (DMap.findWithDefault "Not found"
-                                                                               ( argument_data_file)
-                                                                                         tag_DMap)]
-data_file_range :: DMap.Map String String -> [Int] -> IO [ String]
-data_file_range _ [] = return []
-data_file_range tag_DMap range = unsafeInterleaveMapIO read_file_if_exists $
-       map ((DMap.findWithDefault "Not found" ( argument_data_file) $ tag_DMap) ++) $ map show range
-
-
-
-unsafeInterleaveMapIO f (x:xs) = unsafeInterleaveIO $ do
-        y <- f x
-        ys <- unsafeInterleaveMapIO f xs
-        return (y : ys)
-unsafeInterleaveMapIO _ [] = return []
-
-
-
-
-get_range :: String -> [Int]
-get_range [] = []
-get_range range = (\(x,y) -> [(read x)..(read $ drop 2 y)]) $  splitAt
-                                               ((\(Just x) -> x) (findIndex (== '.') range)) range
-
-
-data_file'::  IO [String] -> IO [String]
-data_file' data_file = data_file
-
-{--data_file'::  [IO String] -> IO [String]
-data_file' [] = return []
-data_file' data_file = step1 $ data_file
-      where
-        step1 :: [IO String] -> IO [String]
-        step1 [] = return []
-        step1 (x:rest) = liftM2 (:) x (step1 rest)--}
-
-iterate_all_data' :: DMap.Map String String ->  [String] -> IO ()
-iterate_all_data' _ [] = return ()
-iterate_all_data' tag_DMap x  = iterate_all_data tag_DMap x
 
 
 
@@ -119,43 +72,6 @@ weed_data_from_input n str = concat $ map ((step1 []).(drop n).lines) str
 
 
 
-
-{-- ================================================================================================
-================================================================================================ --}
-iterate_all_data :: DMap.Map String String -> [String] ->  IO ()
-iterate_all_data _ [] = return ()
-iterate_all_data tag_DMap (x:rest)  = do
-    data_iterator tag_DMap (x:rest) repeats
-    where
-        repeats = read $ (DMap.findWithDefault default_repeat_frames_of_output
-                                               argument_repeat_frames_of_output tag_DMap)
----------------------------------------------------
-
-
-{-- ================================================================================================
-================================================================================================ --}
-data_iterator :: DMap.Map String String -> [String] -> Int ->  IO ()
-data_iterator _ [] _ = return ()
-data_iterator tag_DMap (x:rest) i = do
-    gnuplot_file tag_DMap >>= \s -> step1 i s x
-    data_iterator tag_DMap rest i
-    where
-       step1 :: Int -> String -> String -> IO ()
-       step1 i s x
-         |i > 0 = do data_repeater s x
-                     step1 (i-1) s x
-         |otherwise = return ()
----------------------------------------------------
-
-
-
-{-- ================================================================================================
-================================================================================================ --}
-data_repeater :: String -> String ->  IO ()
-data_repeater _ [] = return ()
-data_repeater s x  = do putStr $ s ++ x ++ "\nEOF\n"
-
----------------------------------------------------
 
 
 
@@ -404,32 +320,32 @@ routine args
        |
        V  --}
      where
-     justtest = do  putStrLn "test"
-
+     --justtest = do  putStrLn "test"
+     justtest = data_process_ffmpeg
 
      is_for_test :: Bool
      is_for_test
-        |"true" == (DMap.findWithDefault "Not found" argument_test $ tag_DMap') = True
+        |"true" == (DMap.findWithDefault "Not found" CmdA.argument_test $ tag_DMap') = True
         |otherwise = False
 
 
      is_multipage :: Bool
      is_multipage
-        |(not has_frame_context_sensitive) && default_multipage_data_file /=
-          (DMap.findWithDefault default_multipage_data_file argument_multipage_data_file $
+        |(not has_frame_context_sensitive) && CmdA.default_multipage_data_file /=
+          (DMap.findWithDefault CmdA.default_multipage_data_file CmdA.argument_multipage_data_file $
                                                                                    tag_DMap') = True
         |otherwise = False
 
      is_from_stdin :: Bool
      is_from_stdin
-        |default_data_from_stdin /= (DMap.findWithDefault default_data_from_stdin
-                                                 argument_data_from_stdin $ tag_DMap') = True
+        |CmdA.default_data_from_stdin /= (DMap.findWithDefault CmdA.default_data_from_stdin
+                                                 CmdA.argument_data_from_stdin $ tag_DMap') = True
         |otherwise = False
 
      has_frame_context_sensitive :: Bool
      has_frame_context_sensitive = -- True
-        hasit $ recognizeDemanded_processors_frame_context_sensitive $ get_demanded_processors
-                  (DMap.findWithDefault default_data_process argument_data_process tag_DMap')
+        hasit $ recognizeDemanded_processors_frame_context_sensitive $ CmdA.get_demanded_processors
+                  (DMap.findWithDefault CmdA.default_data_process CmdA.argument_data_process tag_DMap')
 
         where
         hasit :: [a] -> Bool
@@ -439,20 +355,20 @@ routine args
 
      matrix_stacking_required :: Bool
      matrix_stacking_required
-        |default_matrix_stacking /= (DMap.findWithDefault default_matrix_stacking
-                                                 argument_matrix_stacking $ tag_DMap') = True
+        |CmdA.default_matrix_stacking /= (DMap.findWithDefault CmdA.default_matrix_stacking
+                                                 CmdA.argument_matrix_stacking $ tag_DMap') = True
         |otherwise = False
 
 
      is_for_bypass :: Bool
      is_for_bypass
-        |"true" == (DMap.findWithDefault "Not found" argument_data_bypass_mode $ tag_DMap') = True
+        |"true" == (DMap.findWithDefault "Not found" CmdA.argument_data_bypass_mode $ tag_DMap') = True
         |otherwise = False
 
      from_image_to_data_file :: Bool
      from_image_to_data_file
-        |default_from_image_to_data_file /= (DMap.findWithDefault default_from_image_to_data_file
-                                               argument_from_image_to_data_file $ tag_DMap') = True
+        |CmdA.default_from_image_to_data_file /= (DMap.findWithDefault CmdA.default_from_image_to_data_file
+                                               CmdA.argument_from_image_to_data_file $ tag_DMap') = True
         |otherwise = False
 
 
@@ -468,9 +384,9 @@ routine args
              )
 
           where
-          img = (DMap.findWithDefault default_from_image_to_data_file
-                                               argument_from_image_to_data_file $ tag_DMap')
-          c = get_demanded_coords (DMap.findWithDefault default_coords argument_coords $ tag_DMap')
+          img = (DMap.findWithDefault CmdA.default_from_image_to_data_file
+                                               CmdA.argument_from_image_to_data_file $ tag_DMap')
+          c = CmdA.get_demanded_coords (DMap.findWithDefault CmdA.default_coords CmdA.argument_coords $ tag_DMap')
 
           p :: [(Float,Float)] -> [(Processor_data, Processor_data)]
           p [] = []
@@ -480,7 +396,7 @@ routine args
 -----peculier section , there is processing to do
      there_is_processing :: Bool
      there_is_processing
-        |default_data_process /= (DMap.findWithDefault default_data_process argument_data_process
+        |CmdA.default_data_process /= (DMap.findWithDefault CmdA.default_data_process CmdA.argument_data_process
                                                                                  tag_DMap') = True
         |otherwise = False
 
@@ -503,20 +419,20 @@ routine args
      multipageDefault = data_processMultipage tag_DMap' range
                        (
                        recognizeDemanded_processors $
-                       get_demanded_processors
-                       (DMap.findWithDefault default_data_process argument_data_process tag_DMap')
+                       CmdA.get_demanded_processors
+                       (DMap.findWithDefault CmdA.default_data_process CmdA.argument_data_process tag_DMap')
                        )
                        (stringToFloatList_mn_dyn column_m column_n)
                        (weed_data_from_input  $ read
-                                                   (DMap.findWithDefault default_multipage_data_file
-                                                           argument_multipage_data_file $ tag_DMap')
+                                                   (DMap.findWithDefault CmdA.default_multipage_data_file
+                                                           CmdA.argument_multipage_data_file $ tag_DMap')
                        )
 
      oldDefault = data_processM tag_DMap' range
                        (
                        recognizeDemanded_processors $
-                       get_demanded_processors
-                       (DMap.findWithDefault default_data_process argument_data_process tag_DMap')
+                       CmdA.get_demanded_processors
+                       (DMap.findWithDefault CmdA.default_data_process CmdA.argument_data_process tag_DMap')
                        )
                        (stringToFloatList_mn_dyn column_m column_n)
 
@@ -524,13 +440,13 @@ routine args
      multipageMatrixStacking =  data_processMultipage_matrix_output tag_DMap' range
                        (
                        recognizeDemanded_processors $
-                       get_demanded_processors
-                       (DMap.findWithDefault default_data_process argument_data_process tag_DMap')
+                       CmdA.get_demanded_processors
+                       (DMap.findWithDefault CmdA.default_data_process CmdA.argument_data_process tag_DMap')
                        )
                        (stringToFloatList_mn_dyn column_m column_n)
                        (weed_data_from_input  $ read
-                                                   (DMap.findWithDefault default_multipage_data_file
-                                                           argument_multipage_data_file $ tag_DMap')
+                                                   (DMap.findWithDefault CmdA.default_multipage_data_file
+                                                           CmdA.argument_multipage_data_file $ tag_DMap')
                        )
 
 
@@ -538,13 +454,13 @@ routine args
                      data_processMultipage_fromStdin tag_DMap' range
                        (
                        recognizeDemanded_processors $
-                       get_demanded_processors
-                       (DMap.findWithDefault default_data_process argument_data_process tag_DMap')
+                       CmdA.get_demanded_processors
+                       (DMap.findWithDefault CmdA.default_data_process CmdA.argument_data_process tag_DMap')
                        )
                        (stringToFloatList_mn_dyn column_m column_n)
                        (weed_data_from_input  $ read
-                                                   (DMap.findWithDefault default_data_from_stdin
-                                                           argument_data_from_stdin $ tag_DMap')
+                                                   (DMap.findWithDefault CmdA.default_data_from_stdin
+                                                           CmdA.argument_data_from_stdin $ tag_DMap')
                        )
 
      stdInMatrixStacking =
@@ -552,51 +468,51 @@ routine args
                      data_processMultipage_fromStdin_matrix_output tag_DMap' range
                        (
                        recognizeDemanded_processors $
-                       get_demanded_processors
-                       (DMap.findWithDefault default_data_process argument_data_process tag_DMap')
+                       CmdA.get_demanded_processors
+                       (DMap.findWithDefault CmdA.default_data_process CmdA.argument_data_process tag_DMap')
                        )
                        (stringToFloatList_mn_dyn column_m column_n)
                        (weed_data_from_input  $ read
-                                                   (DMap.findWithDefault default_data_from_stdin
-                                                           argument_data_from_stdin $ tag_DMap')
+                                                   (DMap.findWithDefault CmdA.default_data_from_stdin
+                                                           CmdA.argument_data_from_stdin $ tag_DMap')
                        )
 
 
      context_sensitiveDefault = data_process_range_sensitive tag_DMap' range
                        (
                        recognizeDemanded_processors_frame_context_sensitive $
-                       get_demanded_processors
-                       (DMap.findWithDefault default_data_process argument_data_process tag_DMap')
+                       CmdA.get_demanded_processors
+                       (DMap.findWithDefault CmdA.default_data_process CmdA.argument_data_process tag_DMap')
                        )
                        (stringToFloatList_mn_dyn column_m column_n)
                        (weed_data_from_input  $ read
-                                                   (DMap.findWithDefault default_multipage_data_file
-                                                           argument_multipage_data_file $ tag_DMap')
+                                                   (DMap.findWithDefault CmdA.default_multipage_data_file
+                                                           CmdA.argument_multipage_data_file $ tag_DMap')
                        )
 
      context_sensitiveMatrixStacking = data_process_range_sensitive_matrix_output tag_DMap' range
                        (
                        recognizeDemanded_processors_frame_context_sensitive $
-                       get_demanded_processors
-                       (DMap.findWithDefault default_data_process argument_data_process tag_DMap')
+                       CmdA.get_demanded_processors
+                       (DMap.findWithDefault CmdA.default_data_process CmdA.argument_data_process tag_DMap')
                        )
                        (stringToFloatList_mn_dyn column_m column_n)
                        (weed_data_from_input  $ read
-                                                   (DMap.findWithDefault default_multipage_data_file
-                                                           argument_multipage_data_file $ tag_DMap')
+                                                   (DMap.findWithDefault CmdA.default_multipage_data_file
+                                                           CmdA.argument_multipage_data_file $ tag_DMap')
                        )
 
 -----end of peculier section
 
 
-     column_m = (\(x, y) -> x) $ get_demanded_columns
-                       (DMap.findWithDefault default_use_columns argument_use_columns tag_DMap')
+     column_m = (\(x, y) -> x) $ CmdA.get_demanded_columns
+                       (DMap.findWithDefault CmdA.default_use_columns CmdA.argument_use_columns tag_DMap')
 
-     column_n = (\(x, y) -> y) $ get_demanded_columns
-                       (DMap.findWithDefault default_use_columns argument_use_columns tag_DMap')
+     column_n = (\(x, y) -> y) $ CmdA.get_demanded_columns
+                       (DMap.findWithDefault CmdA.default_use_columns CmdA.argument_use_columns tag_DMap')
 
-     tag_DMap' = tag_DMap args
-     range = get_range (DMap.findWithDefault "" argument_range_of_files $ tag_DMap')
+     tag_DMap' = CmdA.tag_DMap args
+     range = get_range (DMap.findWithDefault "" CmdA.argument_range_of_files $ tag_DMap')
 
 ----------------------------------------------------------------------------------------------------
 
