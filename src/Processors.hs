@@ -5,6 +5,7 @@ identity_i,
 identity_i_dyn,
 identity_f,
 identity_f_dyn,
+identity_v_f,
 derivative_i,
 derivative_i_dyn,
 derivative_f,
@@ -59,6 +60,7 @@ import Global
 import Control.DeepSeq
 import Numeric.FFT
 import Processors_common
+import qualified Data.Matrix as DMatrix
 --
 
 data MarkExtremums = Max|Min|Both deriving (Eq)
@@ -90,6 +92,12 @@ identity_i_dyn  row = map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0::
 ---------------------------------
 
 
+
+
+
+
+
+
 {-- ================================================================================================
 ================================================================================================ --}
 identity_f :: [(Float, Float)] -> [(Float, Float)]
@@ -108,6 +116,19 @@ identity_f_dyn  row =
                       identity_f $
                       map (\(x, y) -> ((fromDyn x 0):: Float , (fromDyn y (0:: Float)) )) row
 ---------------------------------
+
+
+
+
+
+
+
+{-- ================================================================================================
+================================================================================================ --}
+identity_v_f :: (DMatrix.Matrix Rational) -> (DMatrix.Matrix Rational)
+identity_v_f  row = row
+----------------------------------------------------------------------------------------------------
+
 
 
 {-- ================================================================================================

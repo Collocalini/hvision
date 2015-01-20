@@ -17,6 +17,7 @@ data_process_ffmpeg,
 ) where
 
 import Codec.FFmpeg
+--import Codec.FFmpeg.Juicy
 import Data.Matrix
 import qualified Data_iterators as DI
 import Data.Dynamic
@@ -47,47 +48,43 @@ data_file_v (Just tag_DMap) = sequence [read_file_if_exists (DMap.findWithDefaul
        Just (avf,ts) -> return (ImageY8 avf):(step2 gf)
        Nothing -> return []
 --}
-
+--type GetFrame = JuicyPixelFormat p => IO (Maybe (CPic.Image p, Double))
 data VideoProcessing = VideoProcessing {
    data_file :: Maybe FilePath
   ,data_process :: Maybe [( [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)] )]
-  ,getFrame :: IO (Maybe (CPic.Image, Double))
+--  ,getFrame :: GetFrame
    }
 
 {-- common steps in data_processM,
                     data_processMultipage,
                     data_processMultipage_fromStdin  functions
 ===============================================================================================  --}
-data_process_ffmpeg :: [(Matrix Rational) -> (Matrix Rational)] ->
-                       (CPic.ImageY8 -> (Matrix Rational) ) ->
+data_process_ffmpeg :: FilePath ->
+                       DI.IterateData ->
+                       [(Matrix Rational) -> (Matrix Rational)] ->
+                       (CPic.Image p -> (Matrix Rational) ) ->
                        ( (Matrix Rational) -> String) ->
-                       StateT VideoProcessing IO ()
-data_process_ffmpeg processors adaptTo adaptFrom = do
-         (VideoProcessing {data_file = vp_df
-                          ,data_process = vp_dp}) <- get
-         step3 vp_df vp_dp
+                       IO ()
+data_process_ffmpeg file itd processors adaptTo adaptFrom = do
+     initFFmpeg
+     (getFrame, cleanup) <- imageReaderTime file
+     (l,r) <- runStateT (DI.iterate_all_data_v $ step2 getFrame) itd
+     cleanup
      where
 
-     step3 :: Maybe FilePath -> Maybe [( [(Dynamic, Dynamic)] ->
-              [(Processor_data, Processor_data)] )] ->
-              StateT VideoProcessing IO ()
-     step3 (Just fp) (Just pr) = do
-         initFFmpeg
-         (getFrame, cleanup) <- imageReaderTime fp
-         DI.iterate_all_data_v $ mapM adaptFrom $ mapM step1 $ step2 getFrame
-         cleanup
-         where
-         step1 :: IO CPic.ImageY8 -> IO Matrix Rational
-         step1 frame = do
-            return $  (apply_processors_v $ adaptTo frame)
+     {--step1 :: IO [String]
+     step1 = do
+        (step2 getFrame):(step1)
+     --}
 
 
-         step2 :: IO (Maybe (CPic.Image p, Double)) -> IO [CPic.ImageY8]
-         step2 gf = do
-            frame <- gf
-            case frame of
-               Just (avf,ts) -> return $ (CPic.ImageY8 avf):(step2 gf)
-               Nothing -> return []
+     step2 :: IO (Maybe (CPic.Image p, Double)) -> IO String
+     step2 gf = do
+        frame <- gf
+        --replicateM 1 gf
+        case frame of
+           Just (avf,ts) -> return $ adaptFrom $ (apply_processors_v processors) $ adaptTo avf
+           Nothing -> return ""
 
 
 ----------------------------------------------------------------------------------------------------

@@ -37,10 +37,13 @@ stack_output_matrix,
 --stack_output_matrix_context,
 toStringTable,
 toStringTable_matrix,
+imageY8ToMatrix_rational,
 ) where
 import Data.Dynamic
 import Global
 import Data.Matrix
+import qualified Codec.Picture as CPic
+import Image_loading
 
 data Processor_data = Pd Dynamic  (Dynamic -> String) --deriving (Show)
 
@@ -68,8 +71,8 @@ apply_processors (processor:rest) input = (processor input):(apply_processors re
 {-- ================================================================================================
 ================================================================================================ --}
 apply_processors_v :: [(Matrix Rational) -> (Matrix Rational)] ->
-                                     Matrix Rational -> Maybe (Matrix Rational)
-apply_processors_v [] _ = Nothing
+                                     Matrix Rational -> (Matrix Rational)
+--apply_processors_v [] _ =
 apply_processors_v (processor:rest) input = apply_processors_v rest $ processor input
 ----------------------------------------------------------------------------------------------------
 
@@ -416,5 +419,24 @@ xy2string_fi :: [(Float, Int)] -> ([String] , [String])
 xy2string_fi x = unzip $ map (\(x,y) -> (show x, show y) ) x
 
 ------------------ end of ------ put n graphs as m columns -------------------------------------
+
+
+
+
+
+{-- ================================================================================================
+================================================================================================ --}
+imageY8ToMatrix_rational :: CPic.Image CPic.Pixel8 -> (Matrix Rational)
+imageY8ToMatrix_rational image@(CPic.Image {CPic.imageWidth  = width
+                                           ,CPic.imageHeight = height}) =
+
+   matrix width height $ \(x,y) -> fromIntegral $ CPic.pixelAt image (x-1) (y-1)
+
+   where
+   --cords = [(x,y) | x <- [0..width-1], y <- [0..height-1]]
+
+
+
+----------------------------------------------------------------------------------------------------
 
 

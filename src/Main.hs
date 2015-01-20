@@ -321,7 +321,15 @@ routine args
        V  --}
      where
      --justtest = do  putStrLn "test"
-     justtest = data_process_ffmpeg
+     justtest = data_process_ffmpeg dfile itd [identity_v_f] imageY8ToMatrix_rational prettyMatrix
+        where
+        dfile = (\(InputArguments {data_file = d}) -> d) inputArgs'
+        gfile = (\(InputArguments {gnuplot_file = g}) -> g) inputArgs'
+        rfo   = (\(InputArguments {repeat_frames_of_output = r}) -> r) inputArgs'
+        itd   = IterateData {gnuplot_file = gfile, repeat_frames_of_output = rfo}
+
+     }
+
 
      is_for_test :: Bool
      is_for_test
@@ -513,6 +521,7 @@ routine args
 
      tag_DMap' = CmdA.tag_DMap args
      range = get_range (DMap.findWithDefault "" CmdA.argument_range_of_files $ tag_DMap')
+     inputArgs' = inputArgs $ CmdA.tag_DMap args
 
 ----------------------------------------------------------------------------------------------------
 
