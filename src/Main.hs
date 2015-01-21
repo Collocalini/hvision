@@ -30,6 +30,7 @@ import Text.ParserCombinators.Parsec
 import Control.Monad
 import Pipes
 import qualified Pipes.Prelude as P
+import qualified Data.Matrix as Dmatrix
 
 ---from this project
 import Processors
@@ -321,14 +322,14 @@ routine args
        V  --}
      where
      --justtest = do  putStrLn "test"
-     justtest = data_process_ffmpeg dfile itd [identity_v_f] imageY8ToMatrix_rational prettyMatrix
+     justtest = data_process_ffmpeg dfile itd [identity_v_f] imageY8ToMatrix_rational Dmatrix.prettyMatrix
         where
-        dfile = (\(InputArguments {data_file = d}) -> d) inputArgs'
-        gfile = (\(InputArguments {gnuplot_file = g}) -> g) inputArgs'
-        rfo   = (\(InputArguments {repeat_frames_of_output = r}) -> r) inputArgs'
+        dfile = (\(CmdA.InputArguments {CmdA.data_file = (Just d)}) -> d) inputArgs'
+        gfile = (\(CmdA.InputArguments {CmdA.gnuplot_file = g}) -> g) inputArgs'
+        rfo   = (\(CmdA.InputArguments {CmdA.repeat_frames_of_output = r}) -> r) inputArgs'
         itd   = IterateData {gnuplot_file = gfile, repeat_frames_of_output = rfo}
 
-     }
+
 
 
      is_for_test :: Bool
@@ -521,7 +522,7 @@ routine args
 
      tag_DMap' = CmdA.tag_DMap args
      range = get_range (DMap.findWithDefault "" CmdA.argument_range_of_files $ tag_DMap')
-     inputArgs' = inputArgs $ CmdA.tag_DMap args
+     inputArgs' = CmdA.inputArgs $ CmdA.tag_DMap args
 
 ----------------------------------------------------------------------------------------------------
 

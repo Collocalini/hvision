@@ -54,6 +54,7 @@ get_demanded_processors,
 get_demanded_columns,
 get_demanded_coords,
 InputArguments(..),
+inputArgs,
 ) where
 
 import qualified Data.Map as DMap
