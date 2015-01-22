@@ -17,7 +17,8 @@ loadImage,
 
 rgb2grayscale,
 rgb2grayscale_io_maybe,
-to_grayscale_io_maybe
+to_grayscale_io_maybe,
+to_grayscale,
 ) where
 
 import qualified Codec.Picture as CPic

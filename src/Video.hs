@@ -17,7 +17,7 @@ data_process_ffmpeg,
 ) where
 
 import Codec.FFmpeg
---import Codec.FFmpeg.Juicy
+import Codec.FFmpeg.Juicy
 import Data.Matrix
 import qualified Data_iterators as DI
 import Data.Dynamic
@@ -62,29 +62,31 @@ data VideoProcessing = VideoProcessing {
 data_process_ffmpeg :: FilePath ->
                        DI.IterateData ->
                        [(Matrix Rational) -> (Matrix Rational)] ->
-                       (CPic.Image p -> (Matrix Rational) ) ->
+                       (CPic.Image CPic.Pixel8 -> (Matrix Rational) ) ->
                        ( (Matrix Rational) -> String) ->
                        IO ()
 data_process_ffmpeg file itd processors adaptTo adaptFrom = do
      initFFmpeg
      (getFrame, cleanup) <- imageReaderTime file
-     (l,r) <- runStateT (DI.iterate_all_data_v $ step2 getFrame) itd
+     s2 <- step2 getFrame
+     (_,_) <- runStateT (DI.iterate_all_data_v $ map step4 s2) itd
      cleanup
      where
 
-     {--step1 :: IO [String]
-     step1 = do
-        (step2 getFrame):(step1)
-     --}
 
-
-     step2 :: IO (Maybe (CPic.Image p, Double)) -> IO String
+     step2 :: IO (Maybe (CPic.Image CPic.Pixel8, Double)) -> IO [(CPic.Image CPic.Pixel8, Double)]
      step2 gf = do
         frame <- gf
         --replicateM 1 gf
         case frame of
-           Just (avf,ts) -> return $ adaptFrom $ (apply_processors_v processors) $ adaptTo avf
-           Nothing -> return ""
+           Just f ->  step2 gf >>= \s -> return $ f:s
+           Nothing -> return []
+
+     step4 :: (CPic.Image CPic.Pixel8, Double) -> String
+     step4 (avf,_) = adaptFrom $ (apply_processors_v processors) $ adaptTo avf
+
+
+
 
 
 ----------------------------------------------------------------------------------------------------

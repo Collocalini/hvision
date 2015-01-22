@@ -44,6 +44,7 @@ import Global
 import Data.Matrix
 import qualified Codec.Picture as CPic
 import Image_loading
+--import Codec.FFmpeg.Juicy
 
 data Processor_data = Pd Dynamic  (Dynamic -> String) --deriving (Show)
 
@@ -421,6 +422,37 @@ xy2string_fi x = unzip $ map (\(x,y) -> (show x, show y) ) x
 ------------------ end of ------ put n graphs as m columns -------------------------------------
 
 
+
+
+
+
+{-- ================================================================================================
+================================================================================================ --}
+--imagePToMatrix_rational :: JuicyPixelFormat p => CPic.Image p -> (Matrix Rational)
+--imagePToMatrix_rational (CPic.Image image) = imageY8ToMatrix_rational image
+
+----------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+{-- ================================================================================================
+================================================================================================ --}
+imagePToMatrix_rational :: CPic.Image p -> (Matrix Rational)
+imagePToMatrix_rational image@(CPic.Image {CPic.imageWidth  = width
+                                           ,CPic.imageHeight = height
+                                           ,CPic.imageData = data_}) =
+
+   matrix width height $ \(x,y) -> fromIntegral $ step1 $ CPic.pixelAt image (x-1) (y-1)
+
+   where
+   step1 :: CPic.PixelRGB8 -> CPic.Pixel8
+   step1 (CPic.PixelRGB8 r g b) = div (r+g+b) 3
+----------------------------------------------------------------------------------------------------
 
 
 
