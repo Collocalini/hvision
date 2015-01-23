@@ -11,6 +11,7 @@
 -- |
 --
 -----------------------------------------------------------------------------
+{-# LANGUAGE FlexibleInstances #-}
 
 module Image_loading (
 loadImage,
@@ -19,9 +20,13 @@ rgb2grayscale,
 rgb2grayscale_io_maybe,
 to_grayscale_io_maybe,
 to_grayscale,
+
+Image'(..),
+--Image_loading.Image,
 ) where
 
 import qualified Codec.Picture as CPic
+--import Codec.Picture
 
 {-- ================================================================================================
 ================================================================================================ --}
@@ -106,4 +111,29 @@ to_grayscale_io_maybe :: IO (Maybe (CPic.DynamicImage)) ->
 to_grayscale_io_maybe img = do i <- img
                                return $ to_grayscale_maybe i
 ----------------------------------------------------------------------------------------------------
+
+
+
+--data Image' a = Image' a
+
+
+
+--type Image'' = CPic.Image CPic.Pixel8
+class Image' p where
+   to_grayscale8 :: p -> CPic.Image CPic.Pixel8
+
+instance Image' (CPic.Image CPic.Pixel8) where
+   to_grayscale8 img = img
+
+instance Image' (CPic.Image CPic.PixelRGB8) where
+   to_grayscale8 img = CPic.pixelMap step1 img where
+      step1 :: CPic.PixelRGB8 -> CPic.Pixel8
+      step1 (CPic.PixelRGB8 r g b) = div (r+g+b) 3
+
+instance Image' (CPic.Image CPic.PixelRGBA8) where
+   to_grayscale8 img = CPic.pixelMap step1 img where
+      step1 :: CPic.PixelRGBA8 -> CPic.Pixel8
+      step1 (CPic.PixelRGBA8 r g b _) = div (r+g+b) 3
+
+
 

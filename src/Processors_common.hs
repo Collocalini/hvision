@@ -38,6 +38,7 @@ stack_output_matrix,
 toStringTable,
 toStringTable_matrix,
 imageY8ToMatrix_rational,
+imageToMatrix_rational,
 ) where
 import Data.Dynamic
 import Global
@@ -73,7 +74,7 @@ apply_processors (processor:rest) input = (processor input):(apply_processors re
 ================================================================================================ --}
 apply_processors_v :: [(Matrix Rational) -> (Matrix Rational)] ->
                                      Matrix Rational -> (Matrix Rational)
---apply_processors_v [] _ =
+apply_processors_v [last] input = last input
 apply_processors_v (processor:rest) input = apply_processors_v rest $ processor input
 ----------------------------------------------------------------------------------------------------
 
@@ -442,16 +443,8 @@ xy2string_fi x = unzip $ map (\(x,y) -> (show x, show y) ) x
 
 {-- ================================================================================================
 ================================================================================================ --}
-imagePToMatrix_rational :: CPic.Image p -> (Matrix Rational)
-imagePToMatrix_rational image@(CPic.Image {CPic.imageWidth  = width
-                                           ,CPic.imageHeight = height
-                                           ,CPic.imageData = data_}) =
-
-   matrix width height $ \(x,y) -> fromIntegral $ step1 $ CPic.pixelAt image (x-1) (y-1)
-
-   where
-   step1 :: CPic.PixelRGB8 -> CPic.Pixel8
-   step1 (CPic.PixelRGB8 r g b) = div (r+g+b) 3
+imageToMatrix_rational :: Image' a => a -> (Matrix Rational)
+imageToMatrix_rational img = imageY8ToMatrix_rational $ to_grayscale8 img
 ----------------------------------------------------------------------------------------------------
 
 

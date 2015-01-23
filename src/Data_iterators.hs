@@ -104,12 +104,12 @@ data IterateData = IterateData {
 
 {-- ================================================================================================
 ================================================================================================ --}
-iterate_all_data_v ::  [String] -> StateT IterateData IO ()
-iterate_all_data_v [] = return ()
-iterate_all_data_v (x:rest)  = do
+iterate_all_data_v ::  String -> StateT IterateData IO ()
+--iterate_all_data_v [] = return ()
+iterate_all_data_v x  = do
     (IterateData {repeat_frames_of_output = id_rp}) <- get
     case id_rp of
-      (Just repeats) -> data_iterator_v (x:rest) repeats
+      (Just repeats) -> data_iterator_v x repeats
       (Nothing) -> return ()
 ---------------------------------------------------
 
@@ -135,14 +135,12 @@ data_iterator tag_DMap (x:rest) i = do
 
 {-- ================================================================================================
 ================================================================================================ --}
-data_iterator_v ::  [String] -> Int -> StateT IterateData IO ()
-data_iterator_v [] _ = return ()
-data_iterator_v (x:rest) i = do
+data_iterator_v ::  String -> Int -> StateT IterateData IO ()
+data_iterator_v x i = do
     (IterateData {gnuplot_file = id_gpf}) <- get
     case id_gpf of
       (Just gpf) -> do
-        gnuplot_file_v gpf >>= \s -> return $ step1 i s x
-        data_iterator_v rest i
+        gnuplot_file_v gpf >>= \s -> liftIO $ step1 i s x
       (Nothing) -> return ()
     where
        step1 :: Int -> String -> String -> IO ()

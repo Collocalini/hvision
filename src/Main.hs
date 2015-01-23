@@ -41,7 +41,7 @@ import qualified Cmd_arguments as CmdA
 import ImageManipulation
 import Recognize_demanded_processors
 import Data_iterators
-import Video
+import qualified Video as Vd
 ---end of imports from this project
 
 
@@ -322,7 +322,25 @@ routine args
        V  --}
      where
      --justtest = do  putStrLn "test"
-     justtest = data_process_ffmpeg dfile itd [identity_v_f] imageY8ToMatrix_rational Dmatrix.prettyMatrix
+     --justtest = data_process_ffmpeg dfile itd [identity_v_f] {-imageY8ToMatrix_rational-} Dmatrix.prettyMatrix
+     {-justtest = Vd.data_process_ffmpeg
+       (Vd.VideoProcessing {
+                              Vd.data_file = "x.mp4"
+                             ,Vd.processors = [identity_v_f]
+                             ,Vd.adaptFrom = Dmatrix.prettyMatrix
+                             ,Vd.itd = IterateData {gnuplot_file = (Just "plot1.gpi")
+                                                   ,repeat_frames_of_output = (Just 1)}
+                             ,Vd.cleanup = return ()}
+                             )
+        -}
+     justtest = Vd.data_process_ffmpeg
+       (Vd.VideoProcessing {
+                              Vd.data_file = dfile
+                             ,Vd.processors = [identity_v_f]
+                             ,Vd.adaptFrom = Dmatrix.prettyMatrix
+                             ,Vd.itd = itd
+                             ,Vd.cleanup = return ()}
+                             )
         where
         dfile = (\(CmdA.InputArguments {CmdA.data_file = (Just d)}) -> d) inputArgs'
         gfile = (\(CmdA.InputArguments {CmdA.gnuplot_file = g}) -> g) inputArgs'
