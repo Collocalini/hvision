@@ -37,10 +37,12 @@ stack_output_matrix,
 --stack_output_matrix_context,
 toStringTable,
 toStringTable_matrix,
+matrixToString,
 imageY8ToMatrix_rational,
 imageToMatrix_rational,
 ) where
 import Data.Dynamic
+import Data.List
 import Global
 import Data.Matrix
 import qualified Codec.Picture as CPic
@@ -463,5 +465,32 @@ imageY8ToMatrix_rational image@(CPic.Image {CPic.imageWidth  = width
 
 
 ----------------------------------------------------------------------------------------------------
+
+
+matrixToString :: Matrix Rational -> String
+matrixToString m = unlines $ step1 [1..ncols m]
+   where
+   --cords = [(y,x) | x <- [1..nrows m], y <- [1..ncols m]]
+
+   step1 :: [Int] -> [String]
+   step1 [y']      = [unlines $ map (\cc@(r,c) -> (show r) ++ " " ++ (show c) ++ " " ++
+                         (show . fromRational . (!) m) cc ) cords']
+     where
+     cords' = [(x,y') | x <- [1..nrows m]]
+
+   step1 (y':rest) = (unlines $ map (\cc@(r,c) -> (show r) ++ " " ++ (show c) ++ " " ++
+                         (show . fromRational . (!) m) cc ) cords'):(step1 rest)
+     where
+     cords' = [(x,y') | x <- [1..nrows m]]
+
+
+
+
+
+
+
+
+
+
 
 

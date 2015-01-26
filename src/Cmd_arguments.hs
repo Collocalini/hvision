@@ -62,6 +62,7 @@ import Data.Dynamic
 import Processors_common
 import Processors
 import Recognize_demanded_processors
+import Data.Matrix
 
 data InputArguments = InputArguments {
       data_file :: Maybe FilePath
@@ -74,6 +75,7 @@ data InputArguments = InputArguments {
      ,data_bypass_mode :: Maybe Bool
      ,data_process :: Maybe [( [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)] )]
      ,data_process_cs :: Maybe [( [[(Dynamic, Dynamic)]] -> [[(Processor_data, Processor_data)]] )]
+     ,data_process_v :: Maybe [(Matrix Rational) -> (Matrix Rational)]
      ,use_columns :: Maybe (Int, Int)
      ,repeat_frames_of_output :: Maybe Int
      ,matrix_stacking :: Maybe Bool
@@ -96,6 +98,7 @@ inputArgs tm = InputArguments {
   ,data_bypass_mode = data_bypass_mode'
   ,data_process = data_process'
   ,data_process_cs = data_process_cs'
+  ,data_process_v = data_process_v'
   ,use_columns = use_columns'
   ,repeat_frames_of_output = repeat_frames_of_output'
   ,matrix_stacking = matrix_stacking'
@@ -158,19 +161,27 @@ inputArgs tm = InputArguments {
     s = (DMap.findWithDefault default_data_bypass_mode argument_data_bypass_mode tm)
 
   data_process'
-    |s/= default_data_process = Just $ recognizeDemanded_processors $ get_demanded_processors
-                                (DMap.findWithDefault default_data_process argument_data_process tm)
+    |s/= default_data_process = Just $ recognizeDemanded_processors $ get_demanded_processors s
     |otherwise = Nothing
     where
     s = (DMap.findWithDefault default_data_process argument_data_process tm)
 
   data_process_cs'
     |s/= default_data_process = Just $ recognizeDemanded_processors_frame_context_sensitive
-                                 $ get_demanded_processors
-                                (DMap.findWithDefault default_data_process argument_data_process tm)
+                                 $ get_demanded_processors s
     |otherwise = Nothing
     where
     s = (DMap.findWithDefault default_data_process argument_data_process tm)
+
+
+  data_process_v'
+    |s/= default_data_process = Just $ recognizeDemanded_processors_v $ get_demanded_processors s
+    |otherwise = Nothing
+    where
+    s = (DMap.findWithDefault default_data_process argument_data_process tm)
+
+
+
 
   use_columns'
     |s/= "" = Just $ get_demanded_columns s  -- empty "" is not a mistake

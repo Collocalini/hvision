@@ -15,6 +15,7 @@
 module Recognize_demanded_processors (
 recognizeDemanded_processors,
 recognizeDemanded_processors_frame_context_sensitive,
+recognizeDemanded_processors_v,
 
 identity_i_processor',
 identity_f_processor',
@@ -42,6 +43,7 @@ ad_hock_f_processor',
 import Processors_common
 import Processors
 import Data.Dynamic
+import Data.Matrix
 
 recognizeDemanded_processors :: [String] ->
                            [( [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)] )]
@@ -92,6 +94,19 @@ recognizeDemanded_processors_frame_context_sensitive proc = step2 proc
 
 
 
+recognizeDemanded_processors_v :: [String] ->
+                           [(Matrix Rational) -> (Matrix Rational)]
+recognizeDemanded_processors_v [] = []
+recognizeDemanded_processors_v proc = step2 proc
+    where
+    step2 :: [String] -> [(Matrix Rational) -> (Matrix Rational)]
+    step2 [] = []
+    step2 (proc:rest)
+        |identity_v_r_processor proc = identity_v_f:(step2 rest)
+        |otherwise = step2 rest
+
+
+
 
 
 identity_i_processor' :: String -> Bool
@@ -103,6 +118,12 @@ identity_i_processor' str
 identity_f_processor' :: String -> Bool
 identity_f_processor' str
    |"identity_f" == str = True
+   |otherwise = False
+
+
+identity_v_r_processor :: String -> Bool
+identity_v_r_processor str
+   |"identity_v_r" == str = True
    |otherwise = False
 
 

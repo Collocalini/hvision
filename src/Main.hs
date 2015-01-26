@@ -321,32 +321,7 @@ routine args
        |
        V  --}
      where
-     --justtest = do  putStrLn "test"
-     --justtest = data_process_ffmpeg dfile itd [identity_v_f] {-imageY8ToMatrix_rational-} Dmatrix.prettyMatrix
-     {-justtest = Vd.data_process_ffmpeg
-       (Vd.VideoProcessing {
-                              Vd.data_file = "x.mp4"
-                             ,Vd.processors = [identity_v_f]
-                             ,Vd.adaptFrom = Dmatrix.prettyMatrix
-                             ,Vd.itd = IterateData {gnuplot_file = (Just "plot1.gpi")
-                                                   ,repeat_frames_of_output = (Just 1)}
-                             ,Vd.cleanup = return ()}
-                             )
-        -}
-     justtest = Vd.data_process_ffmpeg
-       (Vd.VideoProcessing {
-                              Vd.data_file = dfile
-                             ,Vd.processors = [identity_v_f]
-                             ,Vd.adaptFrom = Dmatrix.prettyMatrix
-                             ,Vd.itd = itd
-                             ,Vd.cleanup = return ()}
-                             )
-        where
-        dfile = (\(CmdA.InputArguments {CmdA.data_file = (Just d)}) -> d) inputArgs'
-        gfile = (\(CmdA.InputArguments {CmdA.gnuplot_file = g}) -> g) inputArgs'
-        rfo   = (\(CmdA.InputArguments {CmdA.repeat_frames_of_output = r}) -> r) inputArgs'
-        itd   = IterateData {gnuplot_file = gfile, repeat_frames_of_output = rfo}
-
+     justtest = do  putStrLn "test"
 
 
 
@@ -378,6 +353,16 @@ routine args
         hasit :: [a] -> Bool
         hasit [] = False
         --hasit [] = False
+        hasit _  = True
+
+
+     has_2d_video :: Bool
+     has_2d_video = -- True
+        hasit $ (\(CmdA.InputArguments {CmdA.data_process_v = d}) -> d) inputArgs'
+        where
+        hasit :: Maybe [a] -> Bool
+        hasit (Just []) = False
+        hasit Nothing = False
         hasit _  = True
 
      matrix_stacking_required :: Bool
@@ -438,6 +423,9 @@ routine args
 
         |has_frame_context_sensitive && (not matrix_stacking_required) = context_sensitiveDefault
         |has_frame_context_sensitive && matrix_stacking_required    = context_sensitiveMatrixStacking
+
+        |has_2d_video = _2d_video
+
         |otherwise = oldDefault
    {--      --}
 
@@ -528,6 +516,24 @@ routine args
                                                    (DMap.findWithDefault CmdA.default_multipage_data_file
                                                            CmdA.argument_multipage_data_file $ tag_DMap')
                        )
+
+
+
+     _2d_video = Vd.data_process_ffmpeg
+       (Vd.VideoProcessing {
+                              Vd.data_file = dfile
+                             ,Vd.processors = proc
+                             ,Vd.adaptFrom = matrixToString --Dmatrix.prettyMatrix
+                             ,Vd.itd = itd
+                             ,Vd.cleanup = return ()}
+                             )
+        where
+        dfile = (\(CmdA.InputArguments {CmdA.data_file = (Just d)}) -> d) inputArgs'
+        proc  = (\(CmdA.InputArguments {CmdA.data_process_v = (Just d)}) -> d) inputArgs'
+        gfile = (\(CmdA.InputArguments {CmdA.gnuplot_file = g}) -> g) inputArgs'
+        rfo   = (\(CmdA.InputArguments {CmdA.repeat_frames_of_output = r}) -> r) inputArgs'
+        itd   = IterateData {gnuplot_file = gfile, repeat_frames_of_output = rfo}
+
 
 -----end of peculier section
 
