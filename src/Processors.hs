@@ -5,6 +5,7 @@ identity_i,
 identity_i_dyn,
 identity_f,
 identity_f_dyn,
+identity_v_f,
 derivative_i,
 derivative_i_dyn,
 derivative_f,
@@ -33,40 +34,40 @@ frame_difference_f,
 frame_difference_sequence_f,
 frame_difference_sequence_f_dyn,
 
-stringToIntList,
-stringToIntList_dyn,
-intListToString,
-stringToFloatList,
-floatListToString,
+histogram_y_per_pixel_multiple_rows_f_dyn,
+histogram_y_per_pixel_multiple_rows_dft_f_dyn,
 
-stringToIntList_mn,
-stringToIntList_mn_dyn,
-stringToFloatList_mn,
-stringToFloatList_mn_dyn,
-intListToString_2to3,
-floatListToString_2to3,
-apply_processors,
-apply_processors_context_sensitive,
-stack_output,
-stack_output_matrix,
---stack_output_matrix_context,
-toStringTable,
-toStringTable_matrix,
+filter_range_f_dyn,
+
+histogram_ad_hock_f_dyn,  -- ad hock
+
+
 --toStringTable_matrix_context,
-Processor_data,
+
+--Processor_data
+
+
 
 ) where
 
 import Data.List
 import Data.Dynamic
-import qualified Data.Map as DMap
-
+import Data.Complex
+import GHC.Float
+--import qualified Data.Map as DMap
+import ImageManipulation
+import Global
+import Control.DeepSeq
+import Numeric.FFT
+import Processors_common
+import qualified Data.Matrix as DMatrix
 --
-data Processor_data = Pd Dynamic  (Dynamic -> String) --deriving (Show)
 
 data MarkExtremums = Max|Min|Both deriving (Eq)
 
-eol_char = "\n"
+data MarkRanges = Lb|Rb|Il|N deriving (Eq)
+
+--eol_char = "\n"
 
 
 ------------------------------------ section of processors -----------------------------------------
@@ -91,6 +92,12 @@ identity_i_dyn  row = map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0::
 ---------------------------------
 
 
+
+
+
+
+
+
 {-- ================================================================================================
 ================================================================================================ --}
 identity_f :: [(Float, Float)] -> [(Float, Float)]
@@ -102,11 +109,26 @@ identity_f  row = row
        |
        V  --}
 identity_f_dyn :: [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)]
-identity_f_dyn  row = map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0:: Float)),
+identity_f_dyn  row =
+                      identity_f `deepseq`
+                      map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0:: Float)),
                                       Pd (toDyn y) (show . \z -> fromDyn z (0:: Float)) )) $
                       identity_f $
                       map (\(x, y) -> ((fromDyn x 0):: Float , (fromDyn y (0:: Float)) )) row
 ---------------------------------
+
+
+
+
+
+
+
+{-- ================================================================================================
+================================================================================================ --}
+identity_v_f :: (DMatrix.Matrix Rational) -> (DMatrix.Matrix Rational)
+identity_v_f  row = row
+----------------------------------------------------------------------------------------------------
+
 
 
 {-- ================================================================================================
@@ -152,7 +174,9 @@ derivative_f  row@((x_prev, _):_) = (x_prev, 0):(step1 row)
        |
        V  --}
 derivative_f_dyn :: [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)]
-derivative_f_dyn  row = map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0:: Float) ),
+derivative_f_dyn  row =
+                      derivative_f `deepseq`
+                      map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0:: Float) ),
                                       Pd (toDyn y) (show . \z -> fromDyn z (0:: Float) ) )) $
                       derivative_f $
                       map (\(x, y) -> ((fromDyn x 0):: Float , (fromDyn y 0):: Float )) row
@@ -215,32 +239,38 @@ max_derivative_in_range_xy_f :: [(Float, Float)] -> [(Float, Float)]
 max_derivative_in_range_xy_f row = derivative_in_range_f (-50) 50 Max $ derivative_f row
                       --head_repeats row $
                  --     max_derivative_in_range
-----------------------------------------------------------------------------------------------------
-
-
-max_derivative_in_range_xy_f_dyn :: [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)]
-max_derivative_in_range_xy_f_dyn  row =
-                     map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0:: Float) ),
-                                      Pd (toDyn y) (show . \z -> fromDyn z (0:: Float) ) )) $
-                      max_derivative_in_range_xy_f $
-                      map (\(x, y) -> ((fromDyn x 0):: Float , (fromDyn y 0):: Float )) row
----------------------------------------------------------------------
 {--    |
        |
        |
        |
        V  --}
+
+max_derivative_in_range_xy_f_dyn :: [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)]
+max_derivative_in_range_xy_f_dyn  row =
+                     max_derivative_in_range_xy_f `deepseq`
+                     map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0:: Float) ),
+                                      Pd (toDyn y) (show . \z -> fromDyn z (0:: Float) ) )) $
+                      max_derivative_in_range_xy_f $
+                      map (\(x, y) -> ((fromDyn x 0):: Float , (fromDyn y 0):: Float )) row
+---------------------------------------------------------------------
+
+
+
 {-- ================================================================================================
 ================================================================================================ --}
 min_derivative_in_range_xy_f :: [(Float, Float)] -> [(Float, Float)]
 min_derivative_in_range_xy_f row = derivative_in_range_f (-50) 50 Min $ derivative_f row
                       --head_repeats row $
                  --     max_derivative_in_range
-----------------------------------------------------------------------------------------------------
-
+{--    |
+       |
+       |
+       |
+       V  --}
 
 min_derivative_in_range_xy_f_dyn :: [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)]
 min_derivative_in_range_xy_f_dyn  row =
+                     min_derivative_in_range_xy_f `deepseq`
                      map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0:: Float) ),
                                       Pd (toDyn y) (show . \z -> fromDyn z (0:: Float) ) )) $
                       min_derivative_in_range_xy_f $
@@ -389,25 +419,6 @@ processor_x_n n row = do
                                                                     distances_to_falloff prest nrest
   --------------------------------------------------------------------------------------------------
 
-  {-- ==============================================================================================
-  -- assumes that first_n are sorted by x coordinate
-  -- assumes that row_rest is sorted by x coordinate
-  ============================================================================================== --}
-  break_to_n :: [(Float, Float)] -> [(Float, Float)] -> [[(Float, Float)]]
-  break_to_n first_n row_rest = step1 (delimeters first_n) row_rest
-     where
-     delimeters :: [(Float, Float)] -> [Float]
-     delimeters [] = []
-     delimeters [_] = []
-     delimeters ((x, _):(xn, _):rest) =  ((xn - x)/2 ):(delimeters rest)
-
-     in_range :: Float -> (Float, Float) -> Bool
-     in_range lim (x, _) = x <= lim
-
-     step1 :: [Float] -> [(Float, Float)] -> [[(Float, Float)]]
-     step1 [] row = [row]
-     step1 (lim:rest) row = (\(l,r) -> l:(step1 rest r) ) $ span (in_range lim) row
-  --------------------------------------------------------------------------------------------------
   test_show_falloff :: [(Float, Float, (Float, Float), (Float, Float))] -> [(Float, Float)]
   test_show_falloff [] = []
   test_show_falloff ((px, _, (m1, b1), (m2, b2)):rest) =
@@ -420,6 +431,28 @@ processor_x_n n row = do
        xr      = [px .. r]
        f m b x = (x, m*x + b)
 ----------------------------------------------------------------------------------------------------
+
+{-- ==============================================================================================
+-- assumes that first_n are sorted by x coordinate
+-- assumes that row_rest is sorted by x coordinate
+============================================================================================== --}
+break_to_n :: [(Float, Float)] -> [(Float, Float)] -> [[(Float, Float)]]
+break_to_n first_n row_rest = step1 (delimeters first_n) row_rest
+     where
+     delimeters :: [(Float, Float)] -> [Float]
+     delimeters [] = []
+     delimeters [_] = []
+     delimeters ((x, _):(xn, _):rest) =  ((xn - x)/2 ):(delimeters rest)
+
+     in_range :: Float -> (Float, Float) -> Bool
+     in_range lim (x, _) = x <= lim
+
+     step1 :: [Float] -> [(Float, Float)] -> [[(Float, Float)]]
+     step1 [] row = [row]
+     step1 (lim:rest) row = (\(l,r) -> l:(step1 rest r) ) $ span (in_range lim) row
+--------------------------------------------------------------------------------------------------
+
+
 {--    |
        |
        |
@@ -579,6 +612,9 @@ distance_between_extremums_f  row@((x_prev, _):_) = --step2 row step1_
         step1_ = step1 mark_extremums_          --- !!! shortcut
         mark_extremums_ = mark_extremums Both row    --- !!! shortcut
 
+        in_range :: Float -> (Float, Float) -> Bool
+        in_range lim (x, _) = x <= lim
+
 {--    |
        |
        |
@@ -591,6 +627,39 @@ distance_between_extremums_f_dyn  row =
                       distance_between_extremums_f $
                       map (\(x, y) -> ((fromDyn x 0):: Float  , (fromDyn y 0):: Float )) row
 ---------------------------------------------------------------------
+
+
+
+
+
+{-- ================================================================================================
+================================================================================================ --}
+filter_range_f :: [(Float, Float)] -> [(Float, Float)]
+filter_range_f  [] = []
+filter_range_f  row = --step1 $
+                      filter (in_range_y 1.0) $ distance_between_extremums_f row
+    where
+
+    in_range_y :: Float -> (Float, Float) -> Bool
+    in_range_y lim (_, y) = y == lim
+
+    step1 :: [(Float, Float)] -> [(Float, Float)]
+    step1 [] = [(0,0)]
+    step1 otherwise = otherwise
+
+{--    |
+       |
+       |
+       |
+       V  --}
+filter_range_f_dyn :: [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)]
+filter_range_f_dyn  row =
+                     map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0:: Float) ),
+                                      Pd (toDyn y) (show . \z -> fromDyn z (0:: Float) ) )) $
+                      filter_range_f $
+                      map (\(x, y) -> ((fromDyn x 0):: Float  , (fromDyn y 0):: Float )) row
+---------------------------------------------------------------------
+
 
 
 
@@ -653,6 +722,7 @@ mark_extremums variant input@(prev@(x_prev, y_prev):curr@(x_curr, y_curr):rest)
     -- find extremums
     step2Both :: [(Float, Float)] -> [(Float, Float)]
     step2Both [] = []
+    step2Both (_:[])   = []
     step2Both (_:_:[]) = []
     step2Both (prev@(x_prev, y_prev):curr@(x_curr, y_curr):next@(x_next, y_next):rest)
         |up y_prev y_curr y_next = curr:(step2Both $ curr:next:rest)
@@ -722,6 +792,7 @@ frame_difference_sequence_f (h:input) = --[[(0,0),(0,0),(0,0)]]
 ================================================================================================ --}
 frame_difference_sequence_f_dyn :: [[(Dynamic, Dynamic)]] -> [[(Processor_data, Processor_data)]]
 frame_difference_sequence_f_dyn  row =
+                     frame_difference_sequence_f `deepseq`
                      map (
                           map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0:: Float) ),
                                            Pd (toDyn y) (show . \z -> fromDyn z (0:: Float) ) ))
@@ -734,390 +805,326 @@ frame_difference_sequence_f_dyn  row =
 
 
 
+
+{-- ==============================================================================================
+============================================================================================== --}
+each_bar_is_a_pixel :: Float -> Float -> [Float]
+each_bar_is_a_pixel l h = [l,(l+1) .. h]
+                          --[(l-0.5),(l+0.5) .. (h+0.5)]
+--------------------------------------------------------------------------------------------------
+
+
+
+{-- ==============================================================================================
+-- assumes that data_ is sorted by x coordinate
+============================================================================================== --}
+fall_to_ranges_x :: [(Float, Float)] -> [Float] -> [[(Float, Float)]]
+fall_to_ranges_x [] _ = []
+fall_to_ranges_x d [] = [d]
+fall_to_ranges_x data_ bars = step1 bars data_
+  where
+
+  in_range :: Float -> (Float, Float) -> Bool
+  in_range lim (x, _) = x <= lim
+
+  step1 :: [Float] -> [(Float, Float)] -> [[(Float, Float)]]
+  step1 [] row = [row]
+  step1 (lim:rest) row = (\(l,r) -> l:(step1 rest r) ) $ span (in_range lim) row
+--------------------------------------------------------------------------------------------------
+
+
+{-- ==============================================================================================
+-- assumes that data_ is sorted by y coordinate
+============================================================================================== --}
+fall_to_ranges_y :: [(Float, Float)] -> [Float] -> [[(Float, Float)]]
+fall_to_ranges_y [] _ = []
+fall_to_ranges_y d [] = [d]
+fall_to_ranges_y data_ bars = step1 bars data_
+  where
+
+  in_range :: Float -> (Float, Float) -> Bool
+  in_range lim (_, y) = y <= lim
+
+  step1 :: [Float] -> [(Float, Float)] -> [[(Float, Float)]]
+  step1 [] row = [row]
+  step1 (lim:rest) row = (\(l,r) -> l:(step1 rest r) ) $ span (in_range lim) row
+--------------------------------------------------------------------------------------------------
+
+
+
+
+{-- ==============================================================================================
+==============================================================================================
+histogram_y_per_pixel :: [(Float, Float)] -> [(Float, Float)]
+histogram_y_per_pixel [] = []
+histogram_y_per_pixel data_ = zip (each_bar_is_a_pixel miny maxy) $ map (fromIntegral.length) $
+                          fall_to_ranges (sortBy sortGt_by_y data_) $ each_bar_is_a_pixel miny maxy
+  where
+  (_, miny) = minimumBy sortGt_by_y data_
+  (_, maxy) = maximumBy sortGt_by_y data_
+--------------------------------------------------------------------------------------------------
+--}
+
+{-- ==============================================================================================
+============================================================================================== --}
+histogram_y_per_pixel_multiple_rows :: [[(Float, Float)]] -> [[(Float, Float)]]
+histogram_y_per_pixel_multiple_rows [] = []
+histogram_y_per_pixel_multiple_rows data_ = cut_to_stripes_by_y $ cut_to_stripes_by_x data_
+                                                     {--zip (each_bar_is_a_pixel minx maxx) $
+                                                                     map histogram_y_per_pixel $
+                                                                     fall_to_ranges
+                                                                     each_bar_is_a_pixel minx maxx
+                                                                     data_-}
+
+  where
+
+  cut_to_stripes_by_x :: [[(Float, Float)]] -> [[[(Float, Float)]]]
+  cut_to_stripes_by_x data_ = map one_stripe_x data_
+
+  one_stripe_x :: [(Float, Float)] -> [[(Float, Float)]]
+  one_stripe_x [] = []
+  one_stripe_x data_ = --zip (each_bar_is_a_pixel minx maxx) $ map (fromIntegral.length) $
+                                                fall_to_ranges_x (sortBy sortGt_by_x data_) $
+                                                each_bar_is_a_pixel minx maxx
+    where
+    (minx, _) = minimumBy sortGt_by_x data_
+    (maxx, _) = maximumBy sortGt_by_x data_
+
+  cut_to_stripes_by_y :: [[[(Float, Float)]]] -> [[(Float, Float)]]
+  cut_to_stripes_by_y step1 = --transpose $
+                              map one_stripe_y $ map concat $ transpose step1
+
+  one_stripe_y :: [(Float, Float)] -> [(Float, Float)]
+  one_stripe_y [] = []
+  one_stripe_y data_ = --zip ((miny-1):(each_bar_is_a_pixel miny maxy) ++ [(maxy+1)]) $
+                       zip ((each_bar_is_a_pixel miny maxy)) $
+                                                map (fromIntegral.length) $
+                                                fall_to_ranges_y (sortBy sortGt_by_y data_) $
+                                                each_bar_is_a_pixel miny maxy
+    where
+    (_, miny) = minimumBy sortGt_by_y data_
+    (_, maxy) = maximumBy sortGt_by_y data_
+
+--count = map (map (map ((map length).(sortBy sortGt_by_y).concat))) $ transpose cut_to_stripes_by_y
+
+--------------------------------------------------------------------------------------------------
+
+hist_chain1 :: [[(Float, Float)]] -> [[(Float, Float)]]
+hist_chain1 d = histogram_y_per_pixel_multiple_rows $ map distance_between_extremums_f d
+
+hist_chain2 :: [[(Float, Float)]] -> [[(Float, Float)]]
+hist_chain2 d = map fft_of_column_of_hist $ histogram_y_per_pixel_multiple_rows $
+                                                                  map distance_between_extremums_f d
+
+
+hist_chain3 :: [[(Float, Float)]] -> [[(Float, Float)]]
+hist_chain3 d = histogram_y_per_pixel_multiple_rows $ map filter_range_f d
+
+
+hist_chain4 :: [[(Float, Float)]] -> [[(Float, Float)]]
+hist_chain4 d = --map fill_holes $ histogram_y_per_pixel_multiple_rows $
+                  map fft_of_column_of_hist $ to_same_length $ map fill_holes $ histogram_y_per_pixel_multiple_rows $
+                                                                  map distance_between_extremums_f d
+
+{--    |
+       |
+       |
+       |
+       V  --}
+
+{-- ================================================================================================
+================================================================================================ --}
+histogram_y_per_pixel_multiple_rows_f_dyn :: [[(Dynamic, Dynamic)]] ->
+                                                                [[(Processor_data, Processor_data)]]
+histogram_y_per_pixel_multiple_rows_f_dyn  row =
+                     hist_chain1 `deepseq`
+                     map (
+                          map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0:: Float) ),
+                                           Pd (toDyn y) (show . \z -> fromDyn z (0:: Float) ) ))
+                         ) $
+                     hist_chain1 $
+                     map (
+                           map (\(x, y) -> ((fromDyn x 0):: Float  , (fromDyn y 0):: Float ))
+                         ) row
+----------------------------------------------------------------------------------------------------
+
+
+
+
+{-- ================================================================================================
+================================================================================================ --}
+histogram_y_per_pixel_multiple_rows_dft_f_dyn :: [[(Dynamic, Dynamic)]] ->
+                                                                [[(Processor_data, Processor_data)]]
+histogram_y_per_pixel_multiple_rows_dft_f_dyn  row =
+                     hist_chain1 `deepseq`
+                     map (
+                          map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0:: Float) ),
+                                           Pd (toDyn y) (show . \z -> fromDyn z (0:: Float) ) ))
+                         ) $
+                     hist_chain2 $
+                     map (
+                           map (\(x, y) -> ((fromDyn x 0):: Float  , (fromDyn y 0):: Float ))
+                         ) row
+----------------------------------------------------------------------------------------------------
+
+
+
+
+
+{-- ================================================================================================
+================================================================================================ --}
+histogram_ad_hock_f_dyn :: [[(Dynamic, Dynamic)]] ->
+                                                                [[(Processor_data, Processor_data)]]
+histogram_ad_hock_f_dyn  row =
+                     --hist_chain2 `deepseq`
+                     hist_chain4 `deepseq`
+                     map (
+                          map (\(x, y) -> (Pd (toDyn x) (show . \z -> fromDyn z (0:: Float) ),
+                                           Pd (toDyn y) (show . \z -> fromDyn z (0:: Float) ) ))
+                         ) $
+                     --hist_chain2 $
+                     hist_chain4 $
+                     map (
+                           map (\(x, y) -> ((fromDyn x 0):: Float  , (fromDyn y 0):: Float ))
+                         ) row
+----------------------------------------------------------------------------------------------------
+
+
+
+
+
+{-- ================================================================================================
+================================================================================================ --}
+fft_of_column_of_hist:: [(Float, Float)] -> [(Float, Float)]
+fft_of_column_of_hist input = ---zip l [maximum $ map (double2Float.realPart) $ dft $
+                              --                                  map (\i -> float2Double i :+ 0) r]
+                              zip [0..] $ map (double2Float.phase) $
+                                --filter (\x -> ((magnitude x) < 20)&&((magnitude x) > -20)) $
+                                                                   dft $
+                                                                   map (\i -> float2Double i :+ 0) r
+   where
+   (l,r) = unzip input
+----------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+{-- ================================================================================================
+================================================================================================ --}
+fill_holes:: [(Float, Float)] -> [(Float, Float)]
+fill_holes []     = []
+fill_holes row = interpolate (to_pairs $ put_brackets $ to_threes row)
+                             (filter (\(_,r)-> r/=0) row)
+  where
+  to_threes :: [(a, a)] -> [((a,a),(a,a),(a,a))]
+  to_threes [] = []
+  to_threes [a] = []
+  to_threes [a,b] = []
+  to_threes (l:c:r:rest) = (l,c,r):(to_threes $ c:r:rest)
+
+  put_brackets :: [((Float,Float),(Float,Float),(Float,Float))] -> [((Float,Float),MarkRanges)]
+  put_brackets row = filter (\(_,r)-> r/=N) $ map rcg row
+
+
+  rcg :: ((Float,Float),(Float,Float),(Float,Float)) -> ((Float,Float), MarkRanges)
+  rcg ((_,lz),p@(_,pz),(_,rz))
+    |(lz == 0)&&(pz /= 0)&&(rz /= 0) = (p, Lb)
+    |(lz /= 0)&&(pz /= 0)&&(rz == 0) = (p, Rb)
+    |(lz == 0)&&(pz /= 0)&&(rz == 0) = (p, Il)
+    |otherwise = (p, N)
+
+  to_pairs :: [((Float,Float),MarkRanges)] -> [((Float,Float), (Float,Float))]
+  to_pairs (f@(_,Rb):rest) = to_pairs_step1 rest
+  to_pairs row = to_pairs_step1 row
+
+  to_pairs_step1 :: [((Float,Float),MarkRanges)] -> [((Float,Float), (Float,Float))]
+  to_pairs_step1 []   = []
+  to_pairs_step1 [_]  = []
+  to_pairs_step1 [(ap,Rb),(bp,Lb)] = [(ap,bp)]
+  to_pairs_step1 [(ap,Il),(bp,Il)] = [(ap,bp)]
+  to_pairs_step1 [_,_]             = []
+  to_pairs_step1 (a@(ap,Rb):b@(bp,Lb):rest) = (ap,bp):(to_pairs_step1 $ b:rest)
+  to_pairs_step1 (a@(ap,Rb):b@(bp,Il):rest) = (ap,bp):(to_pairs_step1 $ b:rest)
+  to_pairs_step1 (a@(ap,Il):b@(bp,Lb):rest) = (ap,bp):(to_pairs_step1 $ b:rest)
+  to_pairs_step1 (a@(ap,Il):b@(bp,Il):rest) = (ap,bp):(to_pairs_step1 $ b:rest)
+  to_pairs_step1 (_:b:rest)                 = (to_pairs_step1 $ b:rest)
+
+  interpolate :: [((Float,Float), (Float,Float))] -> [(Float, Float)] -> [(Float,Float)]
+  interpolate _ []  = []
+  interpolate _ [_] = row
+  interpolate [(a,b)] [ar,br]
+    |(a == ar)&&(b == br) = coordinates_along_the_line_f a b
+    |otherwise = row
+
+  interpolate fst@([(a,b)]) (ar:br:rowl)
+    |(a == ar)&&(b == br) = (coordinates_along_the_line_f a b) ++ rowl
+    |(a /= ar)||(b /= br) = ar:(interpolate fst (br:rowl))
+    |otherwise = row
+
+  interpolate fst@((a,b):rest) (ar:br:rowl)
+    |(a == ar)&&(b == br) = (coordinates_along_the_line_f a b) ++ (interpolate rest rowl)
+    |(a /= ar)||(b /= br) = ar:(interpolate fst (br:rowl))
+    |otherwise = row
+
+  interpolate _ _ = row
+----------------------------------------------------------------------------------------------------
+
+
+
+
+{-- ================================================================================================
+================================================================================================ --}
+to_same_length:: [[(Float, Float)]] -> [[(Float, Float)]]
+to_same_length []     = []
+to_same_length row = map add_preffix_and_suffix $ zip3 row' mins maxs
+  where
+  (gminy,_) = minimumBy sortGt_by_x mins
+  (gmaxy,_) = maximumBy sortGt_by_x maxs
+
+  mins = map (minimumBy sortGt_by_x) row'
+  maxs = map (maximumBy sortGt_by_x) row'
+
+  row' = map (sortBy sortGt_by_x) $ filter (/=[]) row
+
+  add_preffix_and_suffix :: ([(Float, Float)],(Float,Float),(Float,Float)) -> [(Float, Float)]
+  add_preffix_and_suffix ([],_,_)  = []
+  add_preffix_and_suffix (row,(lminy,lminz),(lmaxy,lmaxz))
+    |lminy == gminy = step1 row
+    |lminy > gminy = step1 $ zip pry prz ++ tail row
+    |otherwise = row
+    where
+    step1 row
+      |lmaxy == gmaxy = row
+      |lmaxy < gmaxy = (init row) ++ zip sfy sfz
+      |otherwise = row
+
+    pry = [gminy .. lminy]
+    st  = (abs lminz) / (fromIntegral $ length pry)
+    prz = [0,st.. lminz] ++ repeat lminz
+
+    sfy = [lmaxy..gmaxy]
+    st' = (abs lmaxz) / (fromIntegral $ length sfy)
+    sfz = [lmaxz, lmaxz-st' .. 0] ++ repeat 0
+----------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+
 -------------------------------- end of section of processors --------------------------------------
 
-{-- ================================================================================================
-================================================================================================ --}
-head_repeats _ [] = []
-head_repeats row l = replicate (abs $ length row - length l) (head l) ++ l
-----------------------------------------------------------------------------------------------------
 
-{-- ================================================================================================
-================================================================================================ --}
-sortLt_by_y (_, ly) (_, ry)
-  | ly < ry = GT
-  | ly > ry = LT
-  | ly == ry = EQ
-----------------------------------------------------------------------------------------------------
 
 
-{-- ================================================================================================
-================================================================================================ --}
-sortGt_by_y (_, ly) (_, ry)
-  | ly < ry = LT
-  | ly > ry = GT
-  | ly == ry = EQ
-----------------------------------------------------------------------------------------------------
 
 
 
-{-- ================================================================================================
-================================================================================================ --}
-sortGt_by_x (lx, _) (rx, _)
-  | lx < rx = LT
-  | lx > rx = GT
-  | lx == rx = EQ
-----------------------------------------------------------------------------------------------------
 
 
-{-- ================================================================================================
-================================================================================================ --}
-apply_processors :: [( [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)] )] ->
-                                     [(Dynamic, Dynamic)] -> [[ (Processor_data, Processor_data) ]]
-apply_processors [] _ = []
-apply_processors (processor:rest) input = (processor input):(apply_processors rest input)
-----------------------------------------------------------------------------------------------------
-
-
-
-
-{-- ================================================================================================
-================================================================================================ --}
-apply_processors_context_sensitive ::
-                             [( [[(Dynamic, Dynamic)]] -> [[(Processor_data, Processor_data)]] )] ->
-                                [[(Dynamic, Dynamic)]] -> [[[ (Processor_data, Processor_data) ]]]
-apply_processors_context_sensitive [] _ = []
-apply_processors_context_sensitive p i = --[apply_processors [identity_f_dyn] $ head i]
-                                         --step1 p i
-                                         rearrange $ step1 p i
-  where
-
-  step1 :: [( [[(Dynamic, Dynamic)]] -> [[(Processor_data, Processor_data)]] )] ->
-                                [[(Dynamic, Dynamic)]] -> [[[ (Processor_data, Processor_data) ]]]
-  step1 [] _ = []
-  step1 (processor:rest) input = (processor input) : (step1 rest input)
-
-  rearrange :: [[[ (Processor_data, Processor_data) ]]] -> [[[ (Processor_data, Processor_data) ]]]
-  rearrange [] = []
-  rearrange d = run_slices ([], d)
-
-  slice :: [[[ (Processor_data, Processor_data) ]]] ->
-           [[[ (Processor_data, Processor_data) ]]] ->
-            [[ (Processor_data, Processor_data) ]] ->
-           ([[ (Processor_data, Processor_data) ]], [[[ (Processor_data, Processor_data) ]]])
-  slice []        []                       [] = ([], [])
-  slice []        []                       hs = (reverse hs, [])
-  slice r        []                        hs = (reverse hs, reverse r)
-  slice []       ((h:hrest):thisIteration) [] = slice ([hrest])
-                                                      (thisIteration)
-                                                      ([h])
-  slice []       ((h:[]):thisIteration)    [] = slice ([])
-                                                      (thisIteration)
-                                                      ([h])
-  slice []       (([]):thisIteration)      [] = slice ([])
-                                                      (thisIteration)
-                                                      ([])
-  slice remained ((h:hrest):thisIteration) hs = slice (hrest :remained)
-                                                      (thisIteration)
-                                                      (h:hs)
-  slice remained ((h:[]):thisIteration)    hs = slice (remained)
-                                                      (thisIteration)
-                                                      (h:hs)
-  slice remained (([]):thisIteration)      hs = slice (remained)
-                                                      (thisIteration)
-                                                      (hs)
-
-  run_slices ::
-              ([[ (Processor_data, Processor_data) ]], [[[ (Processor_data, Processor_data) ]]]) ->
-              [[[ (Processor_data, Processor_data) ]]] -- ->
-  run_slices (_, [])         = []
-  run_slices ([], remained)  = run_slices $ slice [] remained []
-  run_slices (row, remained) = row:(run_slices $ slice [] remained [])
-----------------------------------------------------------------------------------------------------
-
-
-
-
-
-{-- ================================================================================================
-================================================================================================ --}
-space_out :: [(Float, Float)]  -> [(Float, Float)] -> [(Float, Float)]
-space_out [] _  = []
-space_out (row@(rx,_):row_rest) []
-   |otherwise = (rx, 0):(space_out row_rest [] )
-space_out (row@(rx,_):row_rest) (extrs@(ex,_):[])
-   |otherwise = (rx, 0):(space_out row_rest [])
-space_out (row@(rx,_):row_rest) (extrs@(ex,_):extrs_rest)
-   |(rx <= ex) && (fst (head row_rest) > ex) = extrs:(space_out row_rest extrs_rest )
-   |otherwise = (rx, 0):(space_out row_rest (extrs:extrs_rest) )
-----------------------------------------------------------------------------------------------------
-
-
-
-
-{-- ================================================================================================
-================================================================================================ --}
-stack_output :: [[ (Processor_data, Processor_data) ]] -> [[Processor_data]]
-stack_output [] = []
-stack_output (data_ : rest ) = stack_output_each_xy (data_ : rest )  -- !!!!!WARNING DIRTY HACK!!!!!
-                               -- (\(x, y) -> x:y:(step1 rest) ) $ unzip data_
-    where
-    step1 :: [[ (Processor_data, Processor_data) ]] -> [[Processor_data]]
-    step1 [] = []
-    step1 (data_ : rest ) = (\(x, y) -> y:(step1 rest)) $ unzip data_
-----------------------------------------------------------------------------------------------------
-
-
-
-{-- ================================================================================================
-================================================================================================ --}
-stack_output_each_xy :: [[ (Processor_data, Processor_data) ]] -> [[Processor_data]]
-stack_output_each_xy [] = []
-stack_output_each_xy (data_ : rest ) = (\(x, y) -> x:y:(stack_output_each_xy rest) ) $ unzip data_
-----------------------------------------------------------------------------------------------------
-
-
-
-
-{-- ================================================================================================
-================================================================================================ --}
-stack_output_matrix :: [[[ (Processor_data, Processor_data) ]]] ->
-                       [[[(Processor_data, Processor_data, Processor_data)]]]
-stack_output_matrix [] = []
-stack_output_matrix input = step1 0 input
-                               --(step1 data_) ++ (stack_output_matrix rest)
-                                --(\(x, y) -> x:y:(step1 rest) ) $ unzip data_
-    where
-    step1 :: Int -> [[[ (Processor_data, Processor_data) ]]] ->
-                    [[[(Processor_data, Processor_data, Processor_data)]]]
-    step1 _ [] = []
-    step1 i (d_ : r ) = (step2 i d_) : (step1 (i+1) r)
-      where
-      step2 :: Int -> [[ (Processor_data, Processor_data) ]] ->
-               [[(Processor_data, Processor_data, Processor_data)]]
-      step2 _ [] = []
-      step2 i' (data_ : rest ) = (map (step3 i'') data_):(step2 i' rest)
-        where
-          --i'= replicate (length data_) $ Pd (toDyn i) (show . \z -> fromDyn z (0:: Int))
-          i''= Pd (toDyn i') (show . \z -> fromDyn z (0:: Int))
-
-      step3 :: Processor_data ->
-               (Processor_data, Processor_data) ->
-               (Processor_data, Processor_data, Processor_data)
-      step3 y (x,z) = (x,y,z)
-----------------------------------------------------------------------------------------------------
-
-
-
-{-- ================================================================================================
-================================================================================================ --}
-toStringTable :: [[Processor_data]] -> String
-toStringTable [] = []
-toStringTable [[]] = []
-toStringTable data_@(left: rest) = unlines $ step_join
-                                (map (\(Pd d f) -> f d) left)
-                                $ step2 rest
-   where
-      step_join :: [String] -> [String] -> [String]
-      step_join []          (y:resty) = ("" ++ " " ++   y) :(step_join [] resty)
-      step_join (x:restx)   []        = (x  ++ " " ++  "") :(step_join restx [])
-      step_join []          []        = []
-      step_join (x:restx)   (y:resty) = (x  ++ " " ++   y) :(step_join restx resty)
-
-      step2 :: [[Processor_data]] -> [String]
-      step2 [] = []
-      step2 (left : rest) = step_join (map (\(Pd d f) -> f d) left) $ step2 rest
-----------------------------------------------------------------------------------------------------
-
-
-
-{-- ================================================================================================
-================================================================================================ --}
-toStringTable_matrix :: [[[(Processor_data, Processor_data, Processor_data)]]] -> String
-toStringTable_matrix [] = []
-toStringTable_matrix [[]] = []
-toStringTable_matrix data_ = allFramess data_
-   where
-   toStrings :: (Processor_data, Processor_data, Processor_data) ->
-                (String, String, String)
-   toStrings (x,y,z) = ( (\(Pd d f) -> f d) x, (\(Pd d f) -> f d) y, (\(Pd d f) -> f d) z)
-
-   toSingleLine :: (String, String, String) -> String
-   toSingleLine (x,y,z) = unwords [x, y, z]
-
-   {--toSingleProcessor ::  [String] -> String
-   toSingleProcessor s = unlines s
-
-   toSingleY ::  [String] -> String
-   toSingleY s = unlines s--}
-
-   processor :: [(Processor_data, Processor_data, Processor_data)] -> String
-   processor p = unlines $ map (toSingleLine.toStrings) p
-
-   allProcessors :: [[(Processor_data, Processor_data, Processor_data)]] -> String
-   allProcessors  pp = concat $ map processor pp
-
-   allFramess :: [[[(Processor_data, Processor_data, Processor_data)]]] -> String
-   allFramess f = --unlines $ map ((eol_char ++) . allProcessors) f
-                  unlines $ map (allProcessors) f
-----------------------------------------------------------------------------------------------------
-
-
-
-
-
-------------------read columns 1,2 of (1..inf)------------------------------------------------------
-{-- ================================================================================================
-================================================================================================ --}
-stringToIntList :: String -> [(Int, Int)]
-stringToIntList str =  map step1 $ lines str
-  where
-  step1 :: String -> (Int, Int)
-  step1 str = (\x -> (read $ head x , read $ head $ tail x) ) $ words str
-{--    |
-       |
-       |
-       |
-       V  --}
-stringToIntList_dyn :: String -> [(Dynamic, Dynamic)]
-stringToIntList_dyn str =  map step1 $ lines str
-  where
-  step1 :: String -> (Dynamic, Dynamic)
-  step1 str = (\x -> (toDyn ((read $ head x):: Int) ,toDyn ((read $ head $ tail x):: Int) ) ) $
-                                                                                          words str
-----------------------------------------------------------------------------------------------------
-
-
-
-{-- ================================================================================================
-================================================================================================ --}
-stringToFloatList :: String -> [(Float, Float)]
-stringToFloatList str =  map step1 $ lines str
-  where
-  step1 :: String -> (Float, Float)
-  step1 str = (\x -> (read $ head x , read $ head $ tail x) ) $ words str
-----------------------------------------------------------------------------------------------------
-
-------------------end of ---- read columns 1,2 of (1..inf)------------------------------------------
-
-
-
-
-
-
-
-------------------read columns m,n of (1..inf)-----------------------------------------------------
-{-- ================================================================================================
-================================================================================================ --}
-stringToIntList_mn :: Int -> Int -> String ->  [(Int, Int)]
-stringToIntList_mn m n str =  map (step1 m n) $ lines str
-  where
-  step1 :: Int -> Int -> String ->   (Int, Int)
-  step1 m n str = (\x -> (read $ head $ drop (m-1) x , read $ head $ drop (n-1) x) ) $ words str
-{--    |
-       |
-       |
-       |
-       V  --}
-stringToIntList_mn_dyn :: Int -> Int -> String -> [(Dynamic, Dynamic)]
-stringToIntList_mn_dyn m n str =  map (\(x, y) -> ((toDyn x), (toDyn y)) ) $
-                                                                          stringToIntList_mn m n str
-----------------------------------------------------------------------------------------------------
-
-{-- ================================================================================================
-================================================================================================ --}
-stringToFloatList_mn :: Int -> Int -> String ->  [(Float, Float)]
-stringToFloatList_mn m n str =  map (step1 m n) $ lines str
-  where
-  step1 :: Int -> Int -> String ->  (Float, Float)
-  step1 m n str = (\x -> (read $ head $ drop (m-1) x , read $ head $ drop (n-1) x) ) $ words str
-{--    |
-       |
-       |
-       |
-       V  --}
-stringToFloatList_mn_dyn :: Int -> Int -> String -> [(Dynamic, Dynamic)]
-stringToFloatList_mn_dyn m n str =  map (\(x, y) -> ((toDyn x), (toDyn y)) ) $
-                                                                       stringToFloatList_mn m n str
-----------------------------------------------------------------------------------------------------
-
-------------------end of ---- read columns m,n of (1..inf)------------------------------------------
-
-
-
-
-
-
-
-
-
------------------- put 2 columns back as string ----------------------------------------------------
-{-- ================================================================================================
-================================================================================================ --}
-intListToString :: [(Int, Int)] -> String
-intListToString x = concat $ map (\(x,y) -> (show x) ++ " " ++ (show y) ++ eol_char ) x
----------------------------------
-
-
-{-- ================================================================================================
-================================================================================================ --}
-floatListToString :: [(Float, Float)] -> String
-floatListToString x = concat $ map (\(x,y) -> (show x) ++ " " ++ (show y) ++ eol_char ) x
----------------------------------
-
------------------- end of ------ put 2 columns back as string -------------------------------------
-
-
-
-
-
-
-
------------------- put 2 graphs as 3 columns ----------------------------------------------------
-step2to3 :: (a, b) -> (c, d) -> (a, b, d)
-step2to3 (a, b) (c, d) = (a, b, d)
-
-{-- ================================================================================================
-================================================================================================ --}
-intListToString_2to3 :: [(Int, Int)] -> [(Int, Int)] -> String
-intListToString_2to3 y y1 = concat $ map
-        (\(x,w,z) -> (show x) ++ " " ++ (show w) ++ " " ++ (show z) ++ eol_char ) $ zipWith step2to3 y y1
-
----------------------------------
-
-
-{-- ================================================================================================
-================================================================================================ --}
-floatListToString_2to3 :: [(Float, Float)] -> [(Float, Float)] -> String
-floatListToString_2to3 y y1 = concat $ map
-        (\(x,w,z) -> (show x) ++ " " ++ (show w) ++ " " ++ (show z) ++ eol_char ) $ zipWith step2to3 y y1
----------------------------------
-
------------------- end of ------ put 2 graphs as 3 columns -------------------------------------
-
-
-
-
-
------------------- put n graphs as m columns ----------------------------------------------------
-
-toString_zip :: [String] -> [String] -> [String]
-toString_zip x y = map (\(x,y) -> x ++ " " ++ " " ++ y ) $ zip x y
-
-
-xy2string_ii :: [(Int, Int)] -> ([String] , [String])
-xy2string_ii x = unzip $ map (\(x,y) -> (show x, show y) ) x
-
-xy2string_if :: [(Int, Float)] -> ([String] , [String])
-xy2string_if x = unzip $ map (\(x,y) -> (show x, show y) ) x
-
-xy2string_ff :: [(Float, Float)] -> ([String] , [String])
-xy2string_ff x = unzip $ map (\(x,y) -> (show x, show y) ) x
-
-xy2string_fi :: [(Float, Int)] -> ([String] , [String])
-xy2string_fi x = unzip $ map (\(x,y) -> (show x, show y) ) x
-
------------------- end of ------ put n graphs as m columns -------------------------------------
 
 
 
