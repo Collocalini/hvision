@@ -61,6 +61,7 @@ import qualified Data.Map as DMap
 import Data.Dynamic
 import Processors_common
 import Processors
+import Processors2d
 import Recognize_demanded_processors
 import Data.Matrix
 
@@ -75,7 +76,8 @@ data InputArguments = InputArguments {
      ,data_bypass_mode :: Maybe Bool
      ,data_process :: Maybe [( [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)] )]
      ,data_process_cs :: Maybe [( [[(Dynamic, Dynamic)]] -> [[(Processor_data, Processor_data)]] )]
-     ,data_process_v :: Maybe [(Matrix Rational) -> (Matrix Rational)]
+     --,data_process_v :: Maybe [(Matrix Rational) -> (Matrix Rational)]
+     ,data_process_v :: Maybe Processors
      ,use_columns :: Maybe (Int, Int)
      ,repeat_frames_of_output :: Maybe Int
      ,matrix_stacking :: Maybe Bool
@@ -175,7 +177,7 @@ inputArgs tm = InputArguments {
 
 
   data_process_v'
-    |s/= default_data_process = Just $ recognizeDemanded_processors_v $ get_demanded_processors s
+    |s/= default_data_process = recognizeDemanded_processors_v $ get_demanded_processors s
     |otherwise = Nothing
     where
     s = (DMap.findWithDefault default_data_process argument_data_process tm)

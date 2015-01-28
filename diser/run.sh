@@ -7,15 +7,24 @@
 
 diser --gnuplot-file plot1.gpi \
       --data-file x.mp4 \
-      --data-process identity_v_r \
+      --data-process identity_v_i \
       |gnuplot -persist \
-      |ffmpeg -f mjpeg -i pipe: -f avi -vcodec copy -y -s 1280x720 xxx5.avi
+      |ffmpeg -f mjpeg -i pipe: -f avi -vcodec copy -y -s 1280x720 xxx6.avi
+
+: << 'xxx'
+diser --gnuplot-file plot1.gpi \
+      --data-file x.mp4 \
+      --data-process identity_v_r \
+      |gzip -c > xxx5.gz
+
+      #|gnuplot -persist \
+      #|ffmpeg -f mjpeg -i pipe: -f avi -vcodec copy -y -s 1280x720 xxx5.avi
       
       #> xxx5
 
+#gunzip < xxx5.gz |gnuplot -persist |ffmpeg -f mjpeg -i pipe: -f avi -vcodec copy -y -s 1280x720 xxx5.avi
 
 
-: << 'xxx'
 diser --gnuplot-file plot1.gpi \
       --data-file x.mp4 \
       --test \

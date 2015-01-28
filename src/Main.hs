@@ -34,6 +34,7 @@ import qualified Data.Matrix as Dmatrix
 
 ---from this project
 import Processors
+--import Processors2d
 import Processors_common
 import Global
 import Image_loading
@@ -360,8 +361,8 @@ routine args
      has_2d_video = -- True
         hasit $ (\(CmdA.InputArguments {CmdA.data_process_v = d}) -> d) inputArgs'
         where
-        hasit :: Maybe [a] -> Bool
-        hasit (Just []) = False
+        hasit :: Maybe Processors -> Bool
+        --hasit (Just []) = False
         hasit Nothing = False
         hasit _  = True
 
@@ -523,7 +524,7 @@ routine args
        (Vd.VideoProcessing {
                               Vd.data_file = dfile
                              ,Vd.processors = proc
-                             ,Vd.adaptFrom = matrixToString --Dmatrix.prettyMatrix
+                             --,Vd.adaptFrom = matrix_rationalToString --Dmatrix.prettyMatrix
                              ,Vd.itd = itd
                              ,Vd.cleanup = return ()}
                              )

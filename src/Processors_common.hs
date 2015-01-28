@@ -15,6 +15,7 @@
 module Processors_common (
 
 Processor_data(..),
+Processors(..),
 
 stringToIntList,
 stringToIntList_dyn,
@@ -30,6 +31,9 @@ intListToString_2to3,
 floatListToString_2to3,
 apply_processors,
 apply_processors_v,
+apply_processors_v_r,
+apply_processors_v_i,
+apply_processors_v_b,
 apply_processors_context_sensitive,
 stack_output,
 stack_output_each_xy,
@@ -37,9 +41,9 @@ stack_output_matrix,
 --stack_output_matrix_context,
 toStringTable,
 toStringTable_matrix,
-matrixToString,
-imageY8ToMatrix_rational,
-imageToMatrix_rational,
+--matrix_rationalToString,
+--imageY8ToMatrix_rational,
+--imageToMatrix_rational,
 ) where
 import Data.Dynamic
 import Data.List
@@ -47,9 +51,12 @@ import Global
 import Data.Matrix
 import qualified Codec.Picture as CPic
 import Image_loading
+import Processors2d
 --import Codec.FFmpeg.Juicy
 
 data Processor_data = Pd Dynamic  (Dynamic -> String) --deriving (Show)
+data Processors = PMRational [(Matrix Rational) -> (Matrix Rational)]
+                | PMInt [(Matrix Int) -> (Matrix Int)]
 
 
 
@@ -74,13 +81,39 @@ apply_processors (processor:rest) input = (processor input):(apply_processors re
 
 {-- ================================================================================================
 ================================================================================================ --}
-apply_processors_v :: [(Matrix Rational) -> (Matrix Rational)] ->
+apply_processors_v_r :: [(Matrix Rational) -> (Matrix Rational)] ->
                                      Matrix Rational -> (Matrix Rational)
-apply_processors_v [last] input = last input
-apply_processors_v (processor:rest) input = apply_processors_v rest $ processor input
+apply_processors_v_r [last] input = last input
+apply_processors_v_r (processor:rest) input = apply_processors_v_r rest $ processor input
 ----------------------------------------------------------------------------------------------------
 
 
+{-- ================================================================================================
+================================================================================================ --}
+apply_processors_v_i :: [(Matrix Int) -> (Matrix Int)] ->
+                                     Matrix Int -> (Matrix Int)
+apply_processors_v_i [last] input = last input
+apply_processors_v_i (processor:rest) input = apply_processors_v_i rest $ processor input
+----------------------------------------------------------------------------------------------------
+
+
+
+{-- ================================================================================================
+================================================================================================ --}
+apply_processors_v_b :: [(Matrix Char) -> (Matrix Char)] ->
+                                     Matrix Char -> (Matrix Char)
+apply_processors_v_b [last] input = last input
+apply_processors_v_b (processor:rest) input = apply_processors_v_b rest $ processor input
+----------------------------------------------------------------------------------------------------
+
+
+
+{-- ================================================================================================
+================================================================================================ --}
+apply_processors_v :: Matrix' a => Processors -> a -> a
+apply_processors_v (PMRational proc) input = input
+--apply_processors_v ((MkProcessor2d processor):rest) input = apply_processors_v rest $ processor input
+----------------------------------------------------------------------------------------------------
 
 
 
@@ -439,20 +472,15 @@ xy2string_fi x = unzip $ map (\(x,y) -> (show x, show y) ) x
 
 
 
-
-
-
-
 {-- ================================================================================================
-================================================================================================ --}
-imageToMatrix_rational :: Image' a => a -> (Matrix Rational)
-imageToMatrix_rational img = imageY8ToMatrix_rational $ to_grayscale8 img
+================================================================================================
+imageToMatrix :: Image' a => Matrix' b => a -> b
+imageToMatrix img = imageY8ToMatrix_rational $ to_grayscale8 img
 ----------------------------------------------------------------------------------------------------
-
-
+--}
 
 {-- ================================================================================================
-================================================================================================ --}
+================================================================================================
 imageY8ToMatrix_rational :: CPic.Image CPic.Pixel8 -> (Matrix Rational)
 imageY8ToMatrix_rational image@(CPic.Image {CPic.imageWidth  = width
                                            ,CPic.imageHeight = height}) =
@@ -466,22 +494,15 @@ imageY8ToMatrix_rational image@(CPic.Image {CPic.imageWidth  = width
 
 ----------------------------------------------------------------------------------------------------
 
+--}
 
-matrixToString :: Matrix Rational -> String
-matrixToString m = unlines $ step1 [1..ncols m]
-   where
-   --cords = [(y,x) | x <- [1..nrows m], y <- [1..ncols m]]
+{-- ================================================================================================
+================================================================================================ --}
+imageToMatrix_rational :: Image' a => a -> (Matrix Rational)
+imageToMatrix_rational img = imageY8ToMatrix_fractional $ to_grayscale8 img
+----------------------------------------------------------------------------------------------------
 
-   step1 :: [Int] -> [String]
-   step1 [y']      = [unlines $ map (\cc@(r,c) -> (show r) ++ " " ++ (show c) ++ " " ++
-                         (show . fromRational . (!) m) cc ) cords']
-     where
-     cords' = [(x,y') | x <- [1..nrows m]]
 
-   step1 (y':rest) = (unlines $ map (\cc@(r,c) -> (show r) ++ " " ++ (show c) ++ " " ++
-                         (show . fromRational . (!) m) cc ) cords'):(step1 rest)
-     where
-     cords' = [(x,y') | x <- [1..nrows m]]
 
 
 

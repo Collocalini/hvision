@@ -21,11 +21,14 @@ rgb2grayscale_io_maybe,
 to_grayscale_io_maybe,
 to_grayscale,
 
+imageY8ToMatrix_fractional,
+
 Image'(..),
 --Image_loading.Image,
 ) where
 
 import qualified Codec.Picture as CPic
+import qualified Data.Matrix as DMatrix
 --import Codec.Picture
 
 {-- ================================================================================================
@@ -113,6 +116,198 @@ to_grayscale_io_maybe img = do i <- img
 ----------------------------------------------------------------------------------------------------
 
 
+{-- ================================================================================================
+================================================================================================ --}
+imageY8ToMatrix_fractional :: Fractional a => CPic.Image CPic.Pixel8 -> (DMatrix.Matrix a)
+imageY8ToMatrix_fractional image@(CPic.Image {CPic.imageWidth  = width
+                                           ,CPic.imageHeight = height}) =
+
+   DMatrix.matrix width height $ \(x,y) -> fromIntegral $ CPic.pixelAt image (x-1) (y-1)
+----------------------------------------------------------------------------------------------------
+
+
+
+{-- ================================================================================================
+================================================================================================ --}
+imageRGB8ToMatrix_fractional :: Fractional a => CPic.Image CPic.PixelRGB8 -> (DMatrix.Matrix a)
+imageRGB8ToMatrix_fractional image@(CPic.Image {CPic.imageWidth  = width
+                                             ,CPic.imageHeight = height}) =
+
+   DMatrix.matrix width height $ \(x,y) ->  step1 $ CPic.pixelAt image (x-1) (y-1)
+
+   where
+   step1 :: Fractional a => CPic.PixelRGB8 -> a
+   step1 (CPic.PixelRGB8 r8 g8 b8) = (rf+gf+bf) / 3
+     where
+     rf= fromIntegral r8
+     gf= fromIntegral g8
+     bf= fromIntegral b8
+----------------------------------------------------------------------------------------------------
+
+
+{-- ================================================================================================
+================================================================================================ --}
+imageRGBA8ToMatrix_fractional :: Fractional a => CPic.Image CPic.PixelRGBA8 -> (DMatrix.Matrix a)
+imageRGBA8ToMatrix_fractional image@(CPic.Image {CPic.imageWidth  = width
+                                             ,CPic.imageHeight = height}) =
+
+   DMatrix.matrix width height $ \(x,y) ->  step1 $ CPic.pixelAt image (x-1) (y-1)
+
+   where
+   step1 :: Fractional a => CPic.PixelRGBA8 -> a
+   step1 (CPic.PixelRGBA8 r8 g8 b8 _) = (rf+gf+bf) / 3
+     where
+     rf= fromIntegral r8
+     gf= fromIntegral g8
+     bf= fromIntegral b8
+----------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+{-- ================================================================================================
+================================================================================================ --}
+imageRGB16ToMatrix_fractional :: Fractional a => CPic.Image CPic.PixelRGB16 -> (DMatrix.Matrix a)
+imageRGB16ToMatrix_fractional image@(CPic.Image {CPic.imageWidth  = width
+                                              ,CPic.imageHeight = height}) =
+
+   DMatrix.matrix width height $ \(x,y) ->  step1 $ CPic.pixelAt image (x-1) (y-1)
+
+   where
+   step1 :: Fractional a => CPic.PixelRGB16 -> a
+   step1 (CPic.PixelRGB16 r16 g16 b16) = (rf+gf+bf) / 3
+     where
+     rf= fromIntegral r16
+     gf= fromIntegral g16
+     bf= fromIntegral b16
+----------------------------------------------------------------------------------------------------
+
+
+
+
+
+{-- ================================================================================================
+================================================================================================ --}
+imageRGBA16ToMatrix_fractional :: Fractional a => CPic.Image CPic.PixelRGBA16 -> (DMatrix.Matrix a)
+imageRGBA16ToMatrix_fractional image@(CPic.Image {CPic.imageWidth  = width
+                                              ,CPic.imageHeight = height}) =
+
+   DMatrix.matrix width height $ \(x,y) ->  step1 $ CPic.pixelAt image (x-1) (y-1)
+
+   where
+   step1 :: Fractional a => CPic.PixelRGBA16 -> a
+   step1 (CPic.PixelRGBA16 r16 g16 b16 _) = (rf+gf+bf) / 3
+     where
+     rf= fromIntegral r16
+     gf= fromIntegral g16
+     bf= fromIntegral b16
+----------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+{-- ================================================================================================
+================================================================================================ --}
+imageY8ToMatrix_integral :: Integral a => CPic.Image CPic.Pixel8 -> (DMatrix.Matrix a)
+imageY8ToMatrix_integral image@(CPic.Image {CPic.imageWidth  = width
+                                           ,CPic.imageHeight = height}) =
+
+   DMatrix.matrix width height $ \(x,y) -> fromIntegral $ CPic.pixelAt image (x-1) (y-1)
+----------------------------------------------------------------------------------------------------
+
+
+
+{-- ================================================================================================
+================================================================================================ --}
+imageRGB8ToMatrix_integral :: Integral a => CPic.Image CPic.PixelRGB8 -> (DMatrix.Matrix a)
+imageRGB8ToMatrix_integral image@(CPic.Image {CPic.imageWidth  = width
+                                             ,CPic.imageHeight = height}) =
+
+   DMatrix.matrix width height $ \(x,y) ->  step1 $ CPic.pixelAt image (x-1) (y-1)
+
+   where
+   step1 :: Integral a => CPic.PixelRGB8 -> a
+   step1 (CPic.PixelRGB8 r8 g8 b8) = div (rf+gf+bf) 3
+     where
+     rf= fromIntegral r8
+     gf= fromIntegral g8
+     bf= fromIntegral b8
+----------------------------------------------------------------------------------------------------
+
+
+{-- ================================================================================================
+================================================================================================ --}
+imageRGBA8ToMatrix_integral :: Integral a => CPic.Image CPic.PixelRGBA8 -> (DMatrix.Matrix a)
+imageRGBA8ToMatrix_integral image@(CPic.Image {CPic.imageWidth  = width
+                                             ,CPic.imageHeight = height}) =
+
+   DMatrix.matrix width height $ \(x,y) ->  step1 $ CPic.pixelAt image (x-1) (y-1)
+
+   where
+   step1 :: Integral a => CPic.PixelRGBA8 -> a
+   step1 (CPic.PixelRGBA8 r8 g8 b8 _) = div (rf+gf+bf) 3
+     where
+     rf= fromIntegral r8
+     gf= fromIntegral g8
+     bf= fromIntegral b8
+----------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+{-- ================================================================================================
+================================================================================================ --}
+imageRGB16ToMatrix_integral :: Integral a => CPic.Image CPic.PixelRGB16 -> (DMatrix.Matrix a)
+imageRGB16ToMatrix_integral image@(CPic.Image {CPic.imageWidth  = width
+                                              ,CPic.imageHeight = height}) =
+
+   DMatrix.matrix width height $ \(x,y) ->  step1 $ CPic.pixelAt image (x-1) (y-1)
+
+   where
+   step1 :: Integral a => CPic.PixelRGB16 -> a
+   step1 (CPic.PixelRGB16 r16 g16 b16) = div (rf+gf+bf) 3
+     where
+     rf= fromIntegral r16
+     gf= fromIntegral g16
+     bf= fromIntegral b16
+----------------------------------------------------------------------------------------------------
+
+
+
+{-- ================================================================================================
+================================================================================================ --}
+imageRGBA16ToMatrix_integral :: Integral a => CPic.Image CPic.PixelRGBA16 -> (DMatrix.Matrix a)
+imageRGBA16ToMatrix_integral image@(CPic.Image {CPic.imageWidth  = width
+                                               ,CPic.imageHeight = height}) =
+
+   DMatrix.matrix width height $ \(x,y) ->  step1 $ CPic.pixelAt image (x-1) (y-1)
+
+   where
+   step1 :: Integral a => CPic.PixelRGBA16 -> a
+   step1 (CPic.PixelRGBA16 r16 g16 b16 _) = div (rf+gf+bf) 3
+     where
+     rf= fromIntegral r16
+     gf= fromIntegral g16
+     bf= fromIntegral b16
+----------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
 
 --data Image' a = Image' a
 
@@ -121,19 +316,56 @@ to_grayscale_io_maybe img = do i <- img
 --type Image'' = CPic.Image CPic.Pixel8
 class Image' p where
    to_grayscale8 :: p -> CPic.Image CPic.Pixel8
+   to_grayscale_MF :: Fractional a => p -> DMatrix.Matrix a
+   to_grayscale_MI :: Integral a => p -> DMatrix.Matrix a
+   --to_grayscale_M :: p -> DMatrix.Matrix a
 
 instance Image' (CPic.Image CPic.Pixel8) where
    to_grayscale8 img = img
+   to_grayscale_MF img = imageY8ToMatrix_fractional img
+   to_grayscale_MI img = imageY8ToMatrix_integral img
+   --to_grayscale_M ()
 
 instance Image' (CPic.Image CPic.PixelRGB8) where
    to_grayscale8 img = CPic.pixelMap step1 img where
       step1 :: CPic.PixelRGB8 -> CPic.Pixel8
       step1 (CPic.PixelRGB8 r g b) = div (r+g+b) 3
+   to_grayscale_MF img = imageRGB8ToMatrix_fractional img
+   to_grayscale_MI img = imageRGB8ToMatrix_integral img
 
 instance Image' (CPic.Image CPic.PixelRGBA8) where
    to_grayscale8 img = CPic.pixelMap step1 img where
       step1 :: CPic.PixelRGBA8 -> CPic.Pixel8
       step1 (CPic.PixelRGBA8 r g b _) = div (r+g+b) 3
+   to_grayscale_MF img = imageRGBA8ToMatrix_fractional img
+   to_grayscale_MI img = imageRGBA8ToMatrix_integral img
+
+instance Image' (CPic.Image CPic.PixelRGB16) where
+   to_grayscale8 img = CPic.pixelMap step1 img where
+      step1 :: CPic.PixelRGB16 -> CPic.Pixel8
+      step1 (CPic.PixelRGB16 r g b) = div (r'+g'+b') 3
+        where
+         r'= fromIntegral r
+         g'= fromIntegral g
+         b'= fromIntegral b
+   to_grayscale_MF img = imageRGB16ToMatrix_fractional img
+   to_grayscale_MI img = imageRGB16ToMatrix_integral img
+
+instance Image' (CPic.Image CPic.PixelRGBA16) where
+   to_grayscale8 img = CPic.pixelMap step1 img where
+      step1 :: CPic.PixelRGBA16 -> CPic.Pixel8
+      step1 (CPic.PixelRGBA16 r g b _) = div (r'+g'+b') 3
+        where
+         r'= fromIntegral r
+         g'= fromIntegral g
+         b'= fromIntegral b
+   to_grayscale_MF img = imageRGBA16ToMatrix_fractional img
+   to_grayscale_MI img = imageRGBA16ToMatrix_integral img
+
+
+
+
+
 
 
 

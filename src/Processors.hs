@@ -5,7 +5,6 @@ identity_i,
 identity_i_dyn,
 identity_f,
 identity_f_dyn,
-identity_v_f,
 derivative_i,
 derivative_i_dyn,
 derivative_f,
@@ -123,11 +122,6 @@ identity_f_dyn  row =
 
 
 
-{-- ================================================================================================
-================================================================================================ --}
-identity_v_f :: (DMatrix.Matrix Rational) -> (DMatrix.Matrix Rational)
-identity_v_f  row = row
-----------------------------------------------------------------------------------------------------
 
 
 

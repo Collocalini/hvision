@@ -42,8 +42,10 @@ ad_hock_f_processor',
 
 import Processors_common
 import Processors
+import Processors2d
 import Data.Dynamic
 import Data.Matrix
+import Data.List
 
 recognizeDemanded_processors :: [String] ->
                            [( [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)] )]
@@ -94,19 +96,32 @@ recognizeDemanded_processors_frame_context_sensitive proc = step2 proc
 
 
 
-recognizeDemanded_processors_v :: [String] ->
-                           [(Matrix Rational) -> (Matrix Rational)]
-recognizeDemanded_processors_v [] = []
-recognizeDemanded_processors_v proc = step2 proc
-    where
-    step2 :: [String] -> [(Matrix Rational) -> (Matrix Rational)]
-    step2 [] = []
-    step2 (proc:rest)
-        |identity_v_r_processor proc = identity_v_f:(step2 rest)
-        |otherwise = step2 rest
+recognizeDemanded_processors_v_r :: [String] -> [(Matrix Rational) -> (Matrix Rational)]
+recognizeDemanded_processors_v_r [] = []
+recognizeDemanded_processors_v_r (proc:rest)
+  |identity_v_r_processor proc = (identity_v_r):(recognizeDemanded_processors_v_r rest)
+  |otherwise = recognizeDemanded_processors_v_r rest
 
 
+recognizeDemanded_processors_v_i :: [String] -> [(Matrix Int) -> (Matrix Int)]
+recognizeDemanded_processors_v_i [] = []
+recognizeDemanded_processors_v_i (proc:rest)
+  |identity_v_i_processor proc = (identity_v_i):(recognizeDemanded_processors_v_i rest)
+  |otherwise = recognizeDemanded_processors_v_i rest
 
+
+recognizeDemanded_processors_v :: [String] -> Maybe Processors
+recognizeDemanded_processors_v [] = Nothing
+recognizeDemanded_processors_v p
+  |not $ null pmr  = Just $ PMRational pmr
+  |not $ null pmi = Just $ PMInt pmi
+  |otherwise = Nothing
+  where
+    pmr = recognizeDemanded_processors_v_r p
+    pmi = recognizeDemanded_processors_v_i p
+
+
+--p2dpack
 
 
 identity_i_processor' :: String -> Bool
@@ -126,6 +141,11 @@ identity_v_r_processor str
    |"identity_v_r" == str = True
    |otherwise = False
 
+
+identity_v_i_processor :: String -> Bool
+identity_v_i_processor str
+   |"identity_v_i" == str = True
+   |otherwise = False
 
 derivative_f_processor' :: String -> Bool
 derivative_f_processor' str
