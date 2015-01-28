@@ -46,6 +46,7 @@ import Processors2d
 import Data.Dynamic
 import Data.Matrix
 import Data.List
+import Data.Word
 
 recognizeDemanded_processors :: [String] ->
                            [( [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)] )]
@@ -109,16 +110,25 @@ recognizeDemanded_processors_v_i (proc:rest)
   |identity_v_i_processor proc = (identity_v_i):(recognizeDemanded_processors_v_i rest)
   |otherwise = recognizeDemanded_processors_v_i rest
 
+recognizeDemanded_processors_v_b :: [String] -> [(Matrix Word8) -> (Matrix Word8)]
+recognizeDemanded_processors_v_b [] = []
+recognizeDemanded_processors_v_b (proc:rest)
+  |identity_v_b_processor proc = (identity_v_b):(recognizeDemanded_processors_v_b rest)
+  |otherwise = recognizeDemanded_processors_v_b rest
+
+
 
 recognizeDemanded_processors_v :: [String] -> Maybe Processors
 recognizeDemanded_processors_v [] = Nothing
 recognizeDemanded_processors_v p
   |not $ null pmr  = Just $ PMRational pmr
   |not $ null pmi = Just $ PMInt pmi
+  |not $ null pmb = Just $ PMWord8 pmb
   |otherwise = Nothing
   where
     pmr = recognizeDemanded_processors_v_r p
     pmi = recognizeDemanded_processors_v_i p
+    pmb = recognizeDemanded_processors_v_b p
 
 
 --p2dpack
@@ -145,6 +155,12 @@ identity_v_r_processor str
 identity_v_i_processor :: String -> Bool
 identity_v_i_processor str
    |"identity_v_i" == str = True
+   |otherwise = False
+
+
+identity_v_b_processor :: String -> Bool
+identity_v_b_processor str
+   |"identity_v_b" == str = True
    |otherwise = False
 
 derivative_f_processor' :: String -> Bool

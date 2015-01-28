@@ -18,8 +18,9 @@
 module Processors2d (
 
 
-identity_v_r
+ identity_v_r
 ,identity_v_i
+,identity_v_b
 ,identity_v
 ,Matrix'(..)
 
@@ -31,6 +32,7 @@ import qualified Data.Matrix as DMatrix
 import Image_loading
 import qualified Codec.Picture as CPic
 import Data.Matrix
+import Data.Word
 
 
 {-- ================================================================================================
@@ -46,6 +48,13 @@ identity_v_r  row = Processors2d.identity row
 ================================================================================================ --}
 identity_v_i :: (DMatrix.Matrix Int) -> (DMatrix.Matrix Int)
 identity_v_i  row = Processors2d.identity row
+----------------------------------------------------------------------------------------------------
+
+
+{-- ================================================================================================
+================================================================================================ --}
+identity_v_b :: (DMatrix.Matrix Word8) -> (DMatrix.Matrix Word8)
+identity_v_b  row = Processors2d.identity row
 ----------------------------------------------------------------------------------------------------
 
 
@@ -128,6 +137,10 @@ instance Matrix' (DMatrix.Matrix Rational) where
    toString mtr = matrix_RationalToString mtr
 
 instance Matrix' (DMatrix.Matrix Int) where
+   identity mtr = mtr
+   toString mtr = matrix_IntegralToString mtr
+
+instance Matrix' (DMatrix.Matrix Word8) where
    identity mtr = mtr
    toString mtr = matrix_IntegralToString mtr
 

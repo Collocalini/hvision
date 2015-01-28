@@ -7,7 +7,7 @@
 
 diser --gnuplot-file plot1.gpi \
       --data-file x.mp4 \
-      --data-process identity_v_i \
+      --data-process identity_v_b \
       |gnuplot -persist \
       |ffmpeg -f mjpeg -i pipe: -f avi -vcodec copy -y -s 1280x720 xxx6.avi
 

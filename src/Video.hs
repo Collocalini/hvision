@@ -89,6 +89,7 @@ processVideo = do
   where
     step2 (PMRational pmr) (avf,_) = toString $ (apply_processors_v_r pmr) $ to_grayscale_MF avf
     step2 (PMInt pmi)      (avf,_) = toString $ (apply_processors_v_i pmi) $ to_grayscale_MI avf
+    step2 (PMWord8 pmb)    (avf,_) = toString $ (apply_processors_v_b pmb) $ to_grayscale_MI avf
 
 ----------------------------------------------------------------------------------------------------
 

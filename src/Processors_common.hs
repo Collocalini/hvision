@@ -52,11 +52,13 @@ import Data.Matrix
 import qualified Codec.Picture as CPic
 import Image_loading
 import Processors2d
+import Data.Word
 --import Codec.FFmpeg.Juicy
 
 data Processor_data = Pd Dynamic  (Dynamic -> String) --deriving (Show)
 data Processors = PMRational [(Matrix Rational) -> (Matrix Rational)]
                 | PMInt [(Matrix Int) -> (Matrix Int)]
+                | PMWord8 [(Matrix Word8) -> (Matrix Word8)]
 
 
 
@@ -100,8 +102,8 @@ apply_processors_v_i (processor:rest) input = apply_processors_v_i rest $ proces
 
 {-- ================================================================================================
 ================================================================================================ --}
-apply_processors_v_b :: [(Matrix Char) -> (Matrix Char)] ->
-                                     Matrix Char -> (Matrix Char)
+apply_processors_v_b :: [(Matrix Word8) -> (Matrix Word8)] ->
+                                     Matrix Word8 -> (Matrix Word8)
 apply_processors_v_b [last] input = last input
 apply_processors_v_b (processor:rest) input = apply_processors_v_b rest $ processor input
 ----------------------------------------------------------------------------------------------------
