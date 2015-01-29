@@ -67,6 +67,7 @@ import Data.Matrix
 
 data InputArguments = InputArguments {
       data_file :: Maybe FilePath
+     ,output_video_file :: Maybe FilePath
      ,single_data_file :: Maybe Bool
      ,multipage_data_file :: Maybe Int
      ,data_from_stdin :: Maybe Int
@@ -91,6 +92,7 @@ data InputArguments = InputArguments {
 inputArgs :: DMap.Map String String -> InputArguments
 inputArgs tm = InputArguments {
    data_file = data_file'
+  ,output_video_file = output_video_file'
   ,single_data_file = single_data_file'
   ,multipage_data_file = multipage_data_file'
   ,data_from_stdin = data_from_stdin'
@@ -114,6 +116,13 @@ inputArgs tm = InputArguments {
     |otherwise = Nothing
     where
     s = (DMap.findWithDefault default_data_file argument_data_file tm)
+
+  output_video_file'
+    |s/= default_data_file = Just s
+    |s== "" = Nothing
+    |otherwise = Nothing
+    where
+    s = (DMap.findWithDefault default_output_video_file argument_output_video_file tm)
 
   single_data_file'
     |s == "True" = Just True
@@ -222,6 +231,7 @@ inputArgs tm = InputArguments {
 
 
 argument_data_file = "data-file"
+argument_output_video_file = "output-video-file"
 argument_single_data_file = "single-data-file"
 argument_multipage_data_file = "multipage-data-file"
 argument_data_from_stdin = "data-from-stdin"
@@ -238,6 +248,7 @@ argument_coords = "coords"
 
 
 default_data_file = ""
+default_output_video_file = ""
 default_single_data_file = "false"
 default_multipage_data_file = "-"
 default_gnuplot_file = ""
@@ -264,6 +275,7 @@ flags = [
 
 options =  [
             argument_data_file ,
+            argument_output_video_file ,
             argument_gnuplot_file ,
             argument_range_of_files,
             argument_multipage_data_file,
@@ -281,6 +293,7 @@ tag_DMap:: [String] -> DMap.Map String String
 tag_DMap [] = DMap.fromList [
         --("",""),
         (argument_data_file,               default_data_file ),
+        (argument_output_video_file,       default_output_video_file ),
         (argument_gnuplot_file,            default_gnuplot_file ),
         (argument_range_of_files,          default_range_of_files),
         (argument_test ,                   default_test),

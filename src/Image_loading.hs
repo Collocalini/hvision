@@ -232,7 +232,7 @@ imageRGB8ToMatrix_integral image@(CPic.Image {CPic.imageWidth  = width
 
    where
    step1 :: Integral a => CPic.PixelRGB8 -> a
-   step1 (CPic.PixelRGB8 r8 g8 b8) = div (rf+gf+bf) 3
+   step1 (CPic.PixelRGB8 r8 g8 b8) = round $ (rf+gf+bf) / 3
      where
      rf= fromIntegral r8
      gf= fromIntegral g8
@@ -250,7 +250,7 @@ imageRGBA8ToMatrix_integral image@(CPic.Image {CPic.imageWidth  = width
 
    where
    step1 :: Integral a => CPic.PixelRGBA8 -> a
-   step1 (CPic.PixelRGBA8 r8 g8 b8 _) = div (rf+gf+bf) 3
+   step1 (CPic.PixelRGBA8 r8 g8 b8 _) = round $ (rf+gf+bf) / 3
      where
      rf= fromIntegral r8
      gf= fromIntegral g8
@@ -272,7 +272,7 @@ imageRGB16ToMatrix_integral image@(CPic.Image {CPic.imageWidth  = width
 
    where
    step1 :: Integral a => CPic.PixelRGB16 -> a
-   step1 (CPic.PixelRGB16 r16 g16 b16) = div (rf+gf+bf) 3
+   step1 (CPic.PixelRGB16 r16 g16 b16) = round $ (rf+gf+bf) / 3
      where
      rf= fromIntegral r16
      gf= fromIntegral g16
@@ -291,7 +291,7 @@ imageRGBA16ToMatrix_integral image@(CPic.Image {CPic.imageWidth  = width
 
    where
    step1 :: Integral a => CPic.PixelRGBA16 -> a
-   step1 (CPic.PixelRGBA16 r16 g16 b16 _) = div (rf+gf+bf) 3
+   step1 (CPic.PixelRGBA16 r16 g16 b16 _) = round $ (rf+gf+bf) / 3
      where
      rf= fromIntegral r16
      gf= fromIntegral g16

@@ -524,12 +524,13 @@ routine args
        (Vd.VideoProcessing {
                               Vd.data_file = dfile
                              ,Vd.processors = proc
-                             --,Vd.adaptFrom = matrix_rationalToString --Dmatrix.prettyMatrix
+                             ,Vd.output_video_file = ovfile
                              ,Vd.itd = itd
                              ,Vd.cleanup = return ()}
                              )
         where
         dfile = (\(CmdA.InputArguments {CmdA.data_file = (Just d)}) -> d) inputArgs'
+        ovfile = (\(CmdA.InputArguments {CmdA.output_video_file = ( d)}) -> d) inputArgs'
         proc  = (\(CmdA.InputArguments {CmdA.data_process_v = (Just d)}) -> d) inputArgs'
         gfile = (\(CmdA.InputArguments {CmdA.gnuplot_file = g}) -> g) inputArgs'
         rfo   = (\(CmdA.InputArguments {CmdA.repeat_frames_of_output = r}) -> r) inputArgs'

@@ -115,6 +115,22 @@ iterate_all_data_v x  = do
 
 
 
+
+{-- ================================================================================================
+================================================================================================ --}
+iterate_all_dataVO_v ::  String -> StateT IterateData IO ()
+--iterate_all_data_v [] = return ()
+iterate_all_dataVO_v x  = do
+    (IterateData {repeat_frames_of_output = id_rp}) <- get
+    case id_rp of
+      (Just repeats) -> data_iterator_v x repeats
+      (Nothing) -> return ()
+---------------------------------------------------
+
+
+
+
+
 {-- ================================================================================================
 ================================================================================================ --}
 data_iterator :: DMap.Map String String -> [String] -> Int ->  IO ()

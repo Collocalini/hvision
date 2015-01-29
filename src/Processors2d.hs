@@ -126,22 +126,77 @@ matrix_IntegralToString m = unlines $ step1 [1..ncols m]
 
 
 
+--instance Fractional CPic.Pixel8 where
+--   fromRational :: Fractional a => a -> CPic.Pixel8
+
+
+
+matrix_RationalToImageY8 :: Matrix Rational -> CPic.Image CPic.Pixel8
+matrix_RationalToImageY8 m =
+   CPic.generateImage (\x y -> round $ m ! (x,y)) (ncols m) (nrows m)
+
+matrix_RationalToImageY16 :: Matrix Rational -> CPic.Image CPic.Pixel16
+matrix_RationalToImageY16 m =
+   CPic.generateImage (\x y -> round $ m ! (x,y)) (ncols m) (nrows m)
+
+matrix_FloatToImageY8 :: Matrix Float -> CPic.Image CPic.Pixel8
+matrix_FloatToImageY8 m =
+   CPic.generateImage (\x y -> round $ m ! (x,y)) (ncols m) (nrows m)
+
+
+matrix_FloatToImageY16 :: Matrix Float -> CPic.Image CPic.Pixel16
+matrix_FloatToImageY16 m =
+   CPic.generateImage (\x y -> round $ m ! (x,y)) (ncols m) (nrows m)
+
+
+
+matrix_IntegralToImageY8 :: Integral a => Matrix a -> CPic.Image CPic.Pixel8
+matrix_IntegralToImageY8 m =
+   CPic.generateImage (\x y -> fromIntegral $ m ! (x,y)) (ncols m) (nrows m)
+
+
+
+matrix_IntegralToImageY16 :: Integral a => Matrix a -> CPic.Image CPic.Pixel16
+matrix_IntegralToImageY16 m =
+   CPic.generateImage (\x y -> fromIntegral $ m ! (x,y)) (ncols m) (nrows m)
+
+
+matrix_IntegralToImageRGB8 :: Integral a => Matrix a -> CPic.Image CPic.PixelRGB8
+matrix_IntegralToImageRGB8 m =
+   CPic.generateImage (\x y -> (\c -> (CPic.PixelRGB8 c c c)) $ fromIntegral $ m ! (x+1,y+1)) (nrows m)(ncols m)
+
+
+
+
+
 class Matrix' p where
    identity :: Matrix' p => p -> p --(DMatrix.Matrix Rational)
    toString :: Matrix' p => p -> String
-
-
+   toImageY8 :: Matrix' p => p -> CPic.Image CPic.Pixel8
+   toImageY16 :: Matrix' p => p -> CPic.Image CPic.Pixel16
+   toImageRGB8 :: Matrix' p => p -> CPic.Image CPic.PixelRGB8
 
 instance Matrix' (DMatrix.Matrix Rational) where
    identity mtr = mtr
    toString mtr = matrix_RationalToString mtr
+   toImageY8 mtr = matrix_RationalToImageY8 mtr
+   toImageY16 mtr = matrix_RationalToImageY16 mtr
+
+instance Matrix' (DMatrix.Matrix Float) where
+   identity mtr = mtr
+   toString mtr = matrix_FloatToString mtr
+   toImageY8 mtr = matrix_FloatToImageY8 mtr
+   toImageY16 mtr = matrix_FloatToImageY16 mtr
 
 instance Matrix' (DMatrix.Matrix Int) where
    identity mtr = mtr
    toString mtr = matrix_IntegralToString mtr
+   toImageY8 mtr = matrix_IntegralToImageY8 mtr
+   toImageY16 mtr = matrix_IntegralToImageY16 mtr
 
 instance Matrix' (DMatrix.Matrix Word8) where
    identity mtr = mtr
    toString mtr = matrix_IntegralToString mtr
-
-
+   toImageY8 mtr = matrix_IntegralToImageY8 mtr
+   toImageY16 mtr = matrix_IntegralToImageY16 mtr
+   toImageRGB8 mtr = matrix_IntegralToImageRGB8 mtr

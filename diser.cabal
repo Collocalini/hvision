@@ -8,9 +8,9 @@ description: .
 data-dir: ""
  
 executable diser
-    build-depends: JuicyPixels -any, base -any, conduit -any,
-                   containers -any, deepseq -any, ffmpeg-light -any, matrix -any,
-                   mtl -any, parsec -any, pipes -any, pure-fft -any
+    build-depends: JuicyPixels -any, base -any, bytestring -any,
+                   conduit -any, containers -any, deepseq -any, ffmpeg-light -any,
+                   matrix -any, mtl -any, parsec -any, pipes -any, pure-fft -any
     main-is: Main.hs
     buildable: True
     extensions: CPP

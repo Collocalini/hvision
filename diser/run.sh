@@ -5,13 +5,37 @@
 #./diser --gnuplot-file plot.gpi --range-of-files 1..1000 --data-process identity --data-file /home/hokum/Documents/pixels_to_signals/sda3/temp/new_Automatic_Traffic_Surveillance.avi/data_files/data |gnuplot -persist|ffmpeg -f mjpeg -i pipe: -f avi -vcodec copy -s 640x480 pipe:|mplayer -profile prof3 -
 
 
+
+diser --gnuplot-file plot1.gpi \
+      --data-file x.mp4 \
+      --output-video-file - \
+      --data-process identity_v_b \
+      |ffmpeg -f image2pipe -i pipe: -f avi -vcodec mjpeg -y -s 1280x720 xxx5.avi
+
+: << 'xxx'
+
+diser --gnuplot-file plot1.gpi \
+      --data-file x.mp4 \
+      --output-video-file - \
+      --data-process identity_v_b \
+      |ffmpeg -f image2pipe -i pipe: -f avi -vcodec mjpeg -y -s 1280x720 xxx5.avi
+
 diser --gnuplot-file plot1.gpi \
       --data-file x.mp4 \
       --data-process identity_v_b \
       |gnuplot -persist \
       |ffmpeg -f mjpeg -i pipe: -f avi -vcodec copy -y -s 1280x720 xxx6.avi
 
-: << 'xxx'
+diser --gnuplot-file plot1.gpi \
+      --data-file x.mp4 \
+      --output-video-file xxx5.avi \
+      --data-process identity_v_b
+
+diser --gnuplot-file plot1.gpi \
+      --data-file x.mp4 \
+      --output-video-file xxx5.avi \
+      --data-process identity_v_b
+
 diser --gnuplot-file plot1.gpi \
       --data-file x.mp4 \
       --data-process identity_v_r \

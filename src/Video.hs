@@ -31,6 +31,7 @@ import Processors2d
 import Control.Monad.State
 import Image_loading
 import Data.Conduit
+import qualified Data.ByteString.Lazy as B
 --import qualified Data.Conduit.List as CL
 
 
@@ -39,6 +40,7 @@ import Data.Conduit
 
 data VideoProcessing = VideoProcessing {
    data_file :: FilePath
+  ,output_video_file :: Maybe FilePath
   ,processors :: Processors
   ,itd :: DI.IterateData
   ,cleanup :: IO ()
@@ -46,16 +48,22 @@ data VideoProcessing = VideoProcessing {
 
 
 
-{--
+{-- ================================================================================================
 ===============================================================================================  --}
 data_process_ffmpeg :: VideoProcessing -> IO ()
-data_process_ffmpeg vp = do
+data_process_ffmpeg vp@(VideoProcessing {output_video_file=Nothing}) = do evalStateT (readVideo $$ processVideoToString) vp
+data_process_ffmpeg vp@(VideoProcessing {output_video_file=Just "-"}) = do evalStateT (readVideo $$ processVideoToPngStdOut) vp
 
-   evalStateT (readVideo $$ processVideo) vp
-   where
+data_process_ffmpeg vp = do evalStateT (readVideo $$ processVideoToVideo) vp
+
+----------------------------------------------------------------------------------------------------
 
 
-readVideo :: Source (StateT VideoProcessing IO) (CPic.Image CPic.Pixel8, Double)
+
+
+{-- ================================================================================================
+===============================================================================================  --}
+readVideo :: Source (StateT VideoProcessing IO) (CPic.Image CPic.PixelRGB8, Double)
 readVideo = do
    vp_state@(VideoProcessing {data_file = data_file}) <- get
    liftIO initFFmpeg
@@ -63,35 +71,163 @@ readVideo = do
    put ((\vp -> vp {cleanup = cleanup}) vp_state)
    step2 getFrame
    where
-   step2 :: IO (Maybe (CPic.Image CPic.Pixel8, Double)) ->
-                                 Source (StateT VideoProcessing IO) (CPic.Image CPic.Pixel8, Double)
+   step2 :: IO (Maybe (CPic.Image CPic.PixelRGB8, Double)) ->
+                                 Source (StateT VideoProcessing IO) (CPic.Image CPic.PixelRGB8, Double)
    step2 gf = do
         frame <- liftIO gf
         case frame of
            Just f ->  do yield f
                          step2 gf  -- >>= \s -> return $ f:s
            Nothing -> return ()
+----------------------------------------------------------------------------------------------------
 
 
-processVideo :: Sink (CPic.Image CPic.Pixel8, Double) (StateT VideoProcessing IO) ()
-processVideo = do
+
+{-- ================================================================================================
+===============================================================================================
+readVideoVO :: Source (StateT VideoProcessing IO) (CPic.Image CPic.PixelRGB8, Double)
+readVideoVO = do
+   vp_state@(VideoProcessing {data_file = data_file}) <- get
+   liftIO initFFmpeg
+   (getFrame, cleanup) <- liftIO $ imageReaderTime data_file
+   put ((\vp -> vp {cleanup = cleanup}) vp_state)
+   step2 getFrame
+   where
+   step2 :: IO (Maybe (CPic.Image CPic.PixelRGB8, Double)) ->
+                                 Source (StateT VideoProcessing IO) (CPic.Image CPic.PixelRGB8, Double)
+   step2 gf = do
+        frame <- liftIO gf
+        case frame of
+           Just f ->  do yield f
+                         step2 gf  -- >>= \s -> return $ f:s
+           Nothing -> return ()
+----------------------------------------------------------------------------------------------------
+--}
+
+
+
+
+{-- ================================================================================================
+===============================================================================================  --}
+processVideoToString :: Sink (CPic.Image CPic.PixelRGB8, Double) (StateT VideoProcessing IO) ()
+processVideoToString = do
    frame <- await
-   (VideoProcessing { --adaptFrom = adaptFrom
-                    processors = processors
+   (VideoProcessing {processors = processors
                     ,itd = itd
                     ,cleanup = cleanup}) <- get
 
    case frame of
-     Just frame -> do liftIO $! evalStateT (DI.iterate_all_data_v $ step2 processors frame) itd
-                      processVideo
+     Just frame -> do
+                  liftIO $! evalStateT (DI.iterate_all_data_v $ processingPipe processors frame) itd
+                  processVideoToString
      Nothing -> liftIO cleanup
-
-  where
-    step2 (PMRational pmr) (avf,_) = toString $ (apply_processors_v_r pmr) $ to_grayscale_MF avf
-    step2 (PMInt pmi)      (avf,_) = toString $ (apply_processors_v_i pmi) $ to_grayscale_MI avf
-    step2 (PMWord8 pmb)    (avf,_) = toString $ (apply_processors_v_b pmb) $ to_grayscale_MI avf
-
 ----------------------------------------------------------------------------------------------------
+
+
+
+{-- ================================================================================================
+===============================================================================================  --}
+processVideoToVideo :: Sink (CPic.Image CPic.PixelRGB8, Double) (StateT VideoProcessing IO) ()
+processVideoToVideo = do
+   frame <- await
+   (VideoProcessing {output_video_file = Just output_video_file
+                    ,processors = processors
+                    ,itd = itd
+                    ,cleanup = cleanup}) <- get
+
+   case frame of
+     Just frame@((CPic.Image {CPic.imageWidth  = width
+                            ,CPic.imageHeight = height}),_) -> do
+        s <- liftIO $! imageWriter (encP (fromIntegral width) (fromIntegral height)) output_video_file
+        let s' = (s :: Maybe (CPic.Image CPic.PixelRGB8) -> IO ()) . Just $ processingPipeVO processors frame
+        liftIO s'
+        processVideoToVideo_s2  (Just (width,height)) s
+     Nothing -> do
+        --s <- imageWriter (encP (fromIntegral w) (fromIntegral h)) output_video_file
+        --liftIO $! imageWriterEnd' 0 0 s
+        liftIO cleanup
+
+
+processVideoToVideo_s2 :: Maybe (Int, Int) -> (Maybe (CPic.Image CPic.PixelRGB8) -> IO ()) ->
+                             Sink (CPic.Image CPic.PixelRGB8, Double) (StateT VideoProcessing IO) ()
+processVideoToVideo_s2 r@(Just (w,h)) s = do
+   frame <- await
+   (VideoProcessing {output_video_file = Just output_video_file
+                    ,processors = processors
+                    ,itd = itd
+                    ,cleanup = cleanup}) <- get
+
+   case frame of
+     Just frame@(_,ts) -> do
+        liftIO $! imageWriter' w h s frame processors
+        liftIO $! putStrLn $ show ts
+        processVideoToVideo_s2 r s
+     Nothing -> do
+        --liftIO $! imageWriterEnd' w h output_video_file
+        liftIO cleanup
+
+
+encP w h = EncodingParams {
+                   epWidth  = w
+                 , epHeight = h
+                 , epFps    = 30
+                 , epCodec  = Nothing --Just avCodecIdH264
+                 , epPixelFormat = Nothing --Just avPixFmtYuv420p --Nothing
+                 , epPreset = "medium"
+                 }
+----------------------------------------------------------------------------------------------------
+
+
+imageWriterStart' :: Int -> Int -> FilePath -> (CPic.Image CPic.PixelRGB8, Double) -> Processors -> IO ()
+imageWriterStart' w h f fr p = do
+   s <- imageWriter (encP (fromIntegral w) (fromIntegral h)) f
+   let s' = (s :: Maybe (CPic.Image CPic.PixelRGB8) -> IO ()) . Just $ processingPipeVO p fr
+   s'
+
+imageWriter' :: Int -> Int -> (Maybe (CPic.Image CPic.PixelRGB8) -> IO ()) -> (CPic.Image CPic.PixelRGB8, Double) -> Processors -> IO ()
+imageWriter' w h s fr p = do
+   let s' = s . Just $ processingPipeVO p fr
+   s'
+
+imageWriterEnd' :: Int -> Int -> (Maybe (CPic.Image CPic.PixelRGB8) -> IO ()) -> IO ()
+imageWriterEnd' w h s = do
+   let s' = s $ Nothing
+   s'
+
+
+
+processingPipeVO (PMRational pmr) (avf,_) = toImageRGB8 $ (apply_processors_v_r pmr) $ to_grayscale_MF avf
+processingPipeVO (PMInt pmi)      (avf,_) = toImageRGB8 $ (apply_processors_v_i pmi) $ to_grayscale_MI avf
+processingPipeVO (PMWord8 pmb)    (avf,_) = toImageRGB8 $ (apply_processors_v_b pmb) $ to_grayscale_MI avf
+
+
+
+processingPipe (PMRational pmr) (avf,_) = toString $ (apply_processors_v_r pmr) $ to_grayscale_MF avf
+processingPipe (PMInt pmi)      (avf,_) = toString $ (apply_processors_v_i pmi) $ to_grayscale_MI avf
+processingPipe (PMWord8 pmb)    (avf,_) = toString $ (apply_processors_v_b pmb) $ to_grayscale_MI avf
+
+
+
+{-- ================================================================================================
+===============================================================================================  --}
+processVideoToPngStdOut :: Sink (CPic.Image CPic.PixelRGB8, Double) (StateT VideoProcessing IO) ()
+processVideoToPngStdOut = do
+   frame <- await
+   (VideoProcessing { --output_video_file = Just output_video_file
+                     processors = processors
+                    ,itd = itd
+                    ,cleanup = cleanup}) <- get
+
+   case frame of
+     Just frame@(f@(CPic.Image {CPic.imageWidth  = width
+                            ,CPic.imageHeight = height}),_) -> do
+        liftIO $! B.putStr $ CPic.encodePng $ f{-processingPipeVO processors frame-}
+        processVideoToPngStdOut
+     Nothing -> do
+        liftIO cleanup
+
+
+
 
 
 
