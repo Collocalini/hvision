@@ -35,8 +35,8 @@ import qualified Data.ByteString.Lazy as B
 --import qualified Data.Conduit.List as CL
 
 
-
-
+-- State a ((Matrix Word8) -> (Matrix Word8))
+--
 
 data VideoProcessing = VideoProcessing {
    data_file :: FilePath
@@ -81,28 +81,6 @@ readVideo = do
            Nothing -> return ()
 ----------------------------------------------------------------------------------------------------
 
-
-
-{-- ================================================================================================
-===============================================================================================
-readVideoVO :: Source (StateT VideoProcessing IO) (CPic.Image CPic.PixelRGB8, Double)
-readVideoVO = do
-   vp_state@(VideoProcessing {data_file = data_file}) <- get
-   liftIO initFFmpeg
-   (getFrame, cleanup) <- liftIO $ imageReaderTime data_file
-   put ((\vp -> vp {cleanup = cleanup}) vp_state)
-   step2 getFrame
-   where
-   step2 :: IO (Maybe (CPic.Image CPic.PixelRGB8, Double)) ->
-                                 Source (StateT VideoProcessing IO) (CPic.Image CPic.PixelRGB8, Double)
-   step2 gf = do
-        frame <- liftIO gf
-        case frame of
-           Just f ->  do yield f
-                         step2 gf  -- >>= \s -> return $ f:s
-           Nothing -> return ()
-----------------------------------------------------------------------------------------------------
---}
 
 
 
@@ -221,7 +199,7 @@ processVideoToPngStdOut = do
    case frame of
      Just frame@(f@(CPic.Image {CPic.imageWidth  = width
                             ,CPic.imageHeight = height}),_) -> do
-        liftIO $! B.putStr $ CPic.encodePng $ f{-processingPipeVO processors frame-}
+        liftIO $! B.putStr $ CPic.encodePng $ processingPipeVO processors frame
         processVideoToPngStdOut
      Nothing -> do
         liftIO cleanup

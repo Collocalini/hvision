@@ -33,6 +33,7 @@ import Image_loading
 import qualified Codec.Picture as CPic
 import Data.Matrix
 import Data.Word
+import Control.Monad.State
 
 
 {-- ================================================================================================
@@ -64,6 +65,37 @@ identity_v_b  row = Processors2d.identity row
 identity_v :: Matrix' a => a -> a
 identity_v  row = Processors2d.identity row
 ----------------------------------------------------------------------------------------------------
+
+
+data  Num a => FrameDifference a = Matrix a
+
+
+{-- ================================================================================================
+================================================================================================ --}
+frame_difference' :: (DMatrix.Matrix Word8) -> (DMatrix.Matrix Word8) -> (DMatrix.Matrix Word8)
+frame_difference'  mtr1 mtr2 = DMatrix.matrix w h (\c -> fromIntegral $ abs $ (mtr1 ! c) - (mtr2 ! c))
+   where
+   --cords = [(y,x) | x <- [1..w], y <- [1..h]]
+   w = nrows mtr1
+   h = ncols mtr1
+----------------------------------------------------------------------------------------------------
+
+
+{-- ================================================================================================
+================================================================================================ --}
+frame_difference'' :: (DMatrix.Matrix Word8) -> State (DMatrix.Matrix Word8) (DMatrix.Matrix Word8)
+frame_difference''  mtr1 = do
+   mtr2 <- get
+   return $ frame_difference' mtr1 mtr2
+----------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
 
 
 
@@ -175,6 +207,7 @@ class Matrix' p where
    toImageY8 :: Matrix' p => p -> CPic.Image CPic.Pixel8
    toImageY16 :: Matrix' p => p -> CPic.Image CPic.Pixel16
    toImageRGB8 :: Matrix' p => p -> CPic.Image CPic.PixelRGB8
+   frame_difference :: Matrix' p => p -> State a p
 
 instance Matrix' (DMatrix.Matrix Rational) where
    identity mtr = mtr
@@ -200,3 +233,21 @@ instance Matrix' (DMatrix.Matrix Word8) where
    toImageY8 mtr = matrix_IntegralToImageY8 mtr
    toImageY16 mtr = matrix_IntegralToImageY16 mtr
    toImageRGB8 mtr = matrix_IntegralToImageRGB8 mtr
+   --frame_difference mtr = frame_difference'' mtr
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

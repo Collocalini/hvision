@@ -12,6 +12,8 @@
 --
 -----------------------------------------------------------------------------
 
+{-# LANGUAGE ScopedTypeVariables #-}
+
 module Processors_common (
 
 Processor_data(..),
@@ -54,11 +56,15 @@ import Image_loading
 import Processors2d
 import Data.Word
 --import Codec.FFmpeg.Juicy
+import Control.Monad.State
 
 data Processor_data = Pd Dynamic  (Dynamic -> String) --deriving (Show)
 data Processors = PMRational [(Matrix Rational) -> (Matrix Rational)]
                 | PMInt [(Matrix Int) -> (Matrix Int)]
                 | PMWord8 [(Matrix Word8) -> (Matrix Word8)]
+         --       | PMWord8vs
+
+data PMWord8vs a = PMWord8vs [( (Matrix Word8 -> State a (Matrix Word8)), a)]
 
 
 
@@ -106,6 +112,17 @@ apply_processors_v_b :: [(Matrix Word8) -> (Matrix Word8)] ->
                                      Matrix Word8 -> (Matrix Word8)
 apply_processors_v_b [last] input = last input
 apply_processors_v_b (processor:rest) input = apply_processors_v_b rest $ processor input
+----------------------------------------------------------------------------------------------------
+
+
+
+{-- ================================================================================================
+================================================================================================ --}
+apply_processors_vs_b :: [(((Matrix Word8) -> a -> (Matrix Word8)) , a)] ->
+                                     Matrix Word8 -> (Matrix Word8)
+apply_processors_vs_b [(p, s)] input = p input s
+
+--apply_processors_vs_b (processor:rest) input = apply_processors_v_b rest $ processor input
 ----------------------------------------------------------------------------------------------------
 
 
