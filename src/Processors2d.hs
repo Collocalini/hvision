@@ -12,7 +12,7 @@
 --
 -----------------------------------------------------------------------------
 --{-# LANGUAGE FlexibleInstances, FlexibleContexts, ExistentialQuantification #-}
---{-# LANGUAGE GADTs -}
+ {-# LANGUAGE GADTs #-}
 {-# LANGUAGE FlexibleInstances #-}
 
 module Processors2d (
@@ -23,6 +23,7 @@ module Processors2d (
 ,identity_v_b
 ,identity_v
 ,Matrix'(..)
+,Processor_vs
 
 --,Processor2d(..)
 --,p2dpack
@@ -34,7 +35,7 @@ import qualified Codec.Picture as CPic
 import Data.Matrix
 import Data.Word
 import Control.Monad.State
-
+--import Processors_common
 
 {-- ================================================================================================
 ================================================================================================ --}
@@ -91,6 +92,13 @@ frame_difference''  mtr1 = do
 
 
 
+{-- ================================================================================================
+================================================================================================ --}
+frame_difference''' :: Processor_vs (DMatrix.Matrix Word8) (DMatrix.Matrix Word8) ->
+                                          Processor_vs (DMatrix.Matrix Word8) (DMatrix.Matrix Word8)
+frame_difference''' (Processor_vs mtr1 mtr2) =
+   Processor_vs (frame_difference' mtr1 mtr2)  mtr1
+----------------------------------------------------------------------------------------------------
 
 
 
@@ -240,6 +248,11 @@ instance Matrix' (DMatrix.Matrix Word8) where
 
 
 
+
+--instance Processor_vs (DMatrix.Matrix Word8) (DMatrix.Matrix Word8)
+
+data Processor_vs a b where
+   Processor_vs :: a -> a -> Processor_vs a a
 
 
 

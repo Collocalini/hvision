@@ -12,12 +12,15 @@
 --
 -----------------------------------------------------------------------------
 
-{-# LANGUAGE ScopedTypeVariables #-}
+-- {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE GADTs #-}
+
 
 module Processors_common (
 
 Processor_data(..),
 Processors(..),
+--Processor_vs,
 
 stringToIntList,
 stringToIntList_dyn,
@@ -58,13 +61,18 @@ import Data.Word
 --import Codec.FFmpeg.Juicy
 import Control.Monad.State
 
+import qualified Data.Matrix as DMatrix
+
 data Processor_data = Pd Dynamic  (Dynamic -> String) --deriving (Show)
 data Processors = PMRational [(Matrix Rational) -> (Matrix Rational)]
                 | PMInt [(Matrix Int) -> (Matrix Int)]
                 | PMWord8 [(Matrix Word8) -> (Matrix Word8)]
-         --       | PMWord8vs
+             --   | PVS [Processor_vs a b]
 
-data PMWord8vs a = PMWord8vs [( (Matrix Word8 -> State a (Matrix Word8)), a)]
+--type PMWord8vs a = ( (Matrix Word8 -> State a (Matrix Word8)), a)
+
+
+--type PMWord8vs
 
 
 
@@ -118,9 +126,9 @@ apply_processors_v_b (processor:rest) input = apply_processors_v_b rest $ proces
 
 {-- ================================================================================================
 ================================================================================================ --}
-apply_processors_vs_b :: [(((Matrix Word8) -> a -> (Matrix Word8)) , a)] ->
-                                     Matrix Word8 -> (Matrix Word8)
-apply_processors_vs_b [(p, s)] input = p input s
+--apply_processors_vs_b :: PMWord8vs ->
+--                                     Matrix Word8 -> (Matrix Word8)
+--apply_processors_vs_b [(p, s)] input = p input s
 
 --apply_processors_vs_b (processor:rest) input = apply_processors_v_b rest $ processor input
 ----------------------------------------------------------------------------------------------------
