@@ -14,6 +14,7 @@
 --{-# LANGUAGE FlexibleInstances, FlexibleContexts, ExistentialQuantification #-}
  {-# LANGUAGE GADTs #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 module Processors2d (
 
@@ -23,7 +24,9 @@ module Processors2d (
 ,identity_v_b
 ,identity_v
 ,Matrix'(..)
-,Processor_vs
+,Matrix''(..)
+,frame_difference_vs
+--,Processor_vs
 
 --,Processor2d(..)
 --,p2dpack
@@ -68,7 +71,14 @@ identity_v  row = Processors2d.identity row
 ----------------------------------------------------------------------------------------------------
 
 
-data  Num a => FrameDifference a = Matrix a
+--data  Num a => FrameDifference a = Matrix a
+
+{-- ================================================================================================
+================================================================================================ --}
+frame_difference_vs :: Matrix'' a b => a -> State b a
+frame_difference_vs  mtr1 = Processors2d.frame_difference mtr1
+----------------------------------------------------------------------------------------------------
+
 
 
 {-- ================================================================================================
@@ -91,7 +101,7 @@ frame_difference''  mtr1 = do
 ----------------------------------------------------------------------------------------------------
 
 
-
+{-
 {-- ================================================================================================
 ================================================================================================ --}
 frame_difference''' :: Processor_vs (DMatrix.Matrix Word8) (DMatrix.Matrix Word8) ->
@@ -100,7 +110,7 @@ frame_difference''' (Processor_vs mtr1 mtr2) =
    Processor_vs (frame_difference' mtr1 mtr2)  mtr1
 ----------------------------------------------------------------------------------------------------
 
-
+-}
 
 
 
@@ -215,7 +225,7 @@ class Matrix' p where
    toImageY8 :: Matrix' p => p -> CPic.Image CPic.Pixel8
    toImageY16 :: Matrix' p => p -> CPic.Image CPic.Pixel16
    toImageRGB8 :: Matrix' p => p -> CPic.Image CPic.PixelRGB8
-   frame_difference :: Matrix' p => p -> State a p
+  -- frame_difference :: Matrix' p => p -> State a p
 
 instance Matrix' (DMatrix.Matrix Rational) where
    identity mtr = mtr
@@ -245,16 +255,29 @@ instance Matrix' (DMatrix.Matrix Word8) where
 
 
 
+class Matrix'' p s where
+  -- identity :: Matrix' p => p -> p --(DMatrix.Matrix Rational)
+  -- toString :: Matrix' p => p -> String
+  -- toImageY8 :: Matrix' p => p -> CPic.Image CPic.Pixel8
+  -- toImageY16 :: Matrix' p => p -> CPic.Image CPic.Pixel16
+  -- toImageRGB8 :: Matrix' p => p -> CPic.Image CPic.PixelRGB8
+   frame_difference :: Matrix'' p s => p -> State s p
 
 
+instance Matrix'' (DMatrix.Matrix Word8) (DMatrix.Matrix Word8) where
+   frame_difference mtr = frame_difference'' mtr
 
 
 --instance Processor_vs (DMatrix.Matrix Word8) (DMatrix.Matrix Word8)
 
-data Processor_vs a b where
-   Processor_vs :: a -> a -> Processor_vs a a
+--data Processor_vs a b where
+--   Processor_vs :: a -> b -> Processor_vs a b
+
+--type Processor_vs_w8 a = Processor_vs (DMatrix.Matrix Word8) a
 
 
+--data Processors_vs_w8 (Processor_vs_w8 a) =
+--   Processors_vs_w8 [Processor_vs_w8 a]
 
 
 

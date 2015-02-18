@@ -14,12 +14,14 @@
 
 -- {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE GADTs #-}
-
+{-# LANGUAGE FlexibleInstances #-}
 
 module Processors_common (
 
 Processor_data(..),
 Processors(..),
+Processor(..),
+Processors',
 --Processor_vs,
 
 stringToIntList,
@@ -64,10 +66,42 @@ import Control.Monad.State
 import qualified Data.Matrix as DMatrix
 
 data Processor_data = Pd Dynamic  (Dynamic -> String) --deriving (Show)
-data Processors = PMRational [(Matrix Rational) -> (Matrix Rational)]
-                | PMInt [(Matrix Int) -> (Matrix Int)]
-                | PMWord8 [(Matrix Word8) -> (Matrix Word8)]
-             --   | PVS [Processor_vs a b]
+data Processors = PMRational_l [(Matrix Rational) -> (Matrix Rational)]
+                | PMInt_l [(Matrix Int) -> (Matrix Int)]
+                | PMWord8_l [(Matrix Word8) -> (Matrix Word8)]
+                | PMWord8vs_l ((Matrix Word8) -> State (Matrix Word8) (Matrix Word8))
+
+
+type Processors' = [Processor]
+
+data Processor = PMRational ((Matrix Rational) -> (Matrix Rational))
+               | PMInt ((Matrix Int) -> (Matrix Int))
+               | PMWord8 ((Matrix Word8) -> (Matrix Word8))
+               | PMWord8vs (((Matrix Word8) -> State (Matrix Word8) (Matrix Word8)), (Matrix Word8))
+              -- | PMWord8vs ((Matrix Word8) -> State (Matrix Word8) (Matrix Word8))
+   --where
+
+
+data Processor' a where
+   PMWord8vs' :: (((Matrix Word8) -> State (Matrix Word8) (Matrix Word8)), (Matrix Word8)) ->
+                Processor' (((Matrix Word8) -> State (Matrix Word8) (Matrix Word8)), (Matrix Word8))
+   --Unpack_proc :: Processor' a => a -> a
+
+
+class Processor'' a where
+   unpack_proc :: Processor' a => a -> a
+
+instance Processor'' (((Matrix Word8) -> State (Matrix Word8) (Matrix Word8)), (Matrix Word8)) where
+
+
+  unpack_proc (PMWord8vs a) = a
+--unpack_proc (PMWord8vs' x) = x
+
+--instance Processor' (((Matrix Word8) -> State (Matrix Word8) (Matrix Word8)), (Matrix Word8)) where
+--   Pack_proc a = PMWord8vs a
+--   Unpack_proc (PMWord8vs a) = a
+
+
 
 --type PMWord8vs a = ( (Matrix Word8 -> State a (Matrix Word8)), a)
 
@@ -137,8 +171,16 @@ apply_processors_v_b (processor:rest) input = apply_processors_v_b rest $ proces
 
 {-- ================================================================================================
 ================================================================================================ --}
-apply_processors_v :: Matrix' a => Processors -> a -> a
-apply_processors_v (PMRational proc) input = input
+apply_processors_v :: a -> State Processors' a
+apply_processors_v frame = do
+   ps <- get
+   (r,s) <- step1 frame ps
+   let (p,ss) = unzip ps
+   put (zip p s)
+   where
+   step1 :: a -> Processors' -> b
+   step1 f ((proc , st):rest) = runState proc st
+--apply_processors_v ((proc, st):rest) input = proc input
 --apply_processors_v ((MkProcessor2d processor):rest) input = apply_processors_v rest $ processor input
 ----------------------------------------------------------------------------------------------------
 

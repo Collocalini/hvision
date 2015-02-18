@@ -121,14 +121,27 @@ recognizeDemanded_processors_v_b (proc:rest)
 recognizeDemanded_processors_v :: [String] -> Maybe Processors
 recognizeDemanded_processors_v [] = Nothing
 recognizeDemanded_processors_v p
-  |not $ null pmr  = Just $ PMRational pmr
-  |not $ null pmi = Just $ PMInt pmi
-  |not $ null pmb = Just $ PMWord8 pmb
+  |not $ null pmr  = Just $ PMRational_l pmr
+  |not $ null pmi = Just $ PMInt_l pmi
+  |not $ null pmb = Just $ PMWord8_l pmb
   |otherwise = Nothing
   where
     pmr = recognizeDemanded_processors_v_r p
     pmi = recognizeDemanded_processors_v_i p
     pmb = recognizeDemanded_processors_v_b p
+
+
+
+recognizeDemanded_processors_v' :: [String] -> Maybe Processors'
+recognizeDemanded_processors_v' [] = Nothing
+recognizeDemanded_processors_v' pp = Just $ step1 pp
+  where
+    step1 :: [String] -> Processors'
+    step1 [] = []
+    step1 (p:rest)
+      |identity_v_b_processor p = (PMWord8 identity_v_b):(step1 rest)
+      |frame_difference_v_b_processor p = (PMWord8vs frame_difference_vs):(step1 rest)
+      |otherwise = step1 rest
 
 
 --p2dpack
@@ -255,7 +268,10 @@ ad_hock_f_processor' str
    |otherwise = False
 
 
-
+frame_difference_v_b_processor :: String -> Bool
+frame_difference_v_b_processor str
+   |"frame_difference_v_b" == str = True
+   |otherwise = False
 
 
 

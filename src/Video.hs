@@ -174,15 +174,15 @@ imageWriterEnd' w h s = do
 
 
 
-processingPipeVO (PMRational pmr) (avf,_) = toImageRGB8 $ (apply_processors_v_r pmr) $ to_grayscale_MF avf
-processingPipeVO (PMInt pmi)      (avf,_) = toImageRGB8 $ (apply_processors_v_i pmi) $ to_grayscale_MI avf
-processingPipeVO (PMWord8 pmb)    (avf,_) = toImageRGB8 $ (apply_processors_v_b pmb) $ to_grayscale_MI avf
+processingPipeVO (PMRational_l pmr) (avf,_) = toImageRGB8 $ (apply_processors_v_r pmr) $ to_grayscale_MF avf
+processingPipeVO (PMInt_l pmi)      (avf,_) = toImageRGB8 $ (apply_processors_v_i pmi) $ to_grayscale_MI avf
+processingPipeVO (PMWord8_l pmb)    (avf,_) = toImageRGB8 $ (apply_processors_v_b pmb) $ to_grayscale_MI avf
 
 
 
-processingPipe (PMRational pmr) (avf,_) = toString $ (apply_processors_v_r pmr) $ to_grayscale_MF avf
-processingPipe (PMInt pmi)      (avf,_) = toString $ (apply_processors_v_i pmi) $ to_grayscale_MI avf
-processingPipe (PMWord8 pmb)    (avf,_) = toString $ (apply_processors_v_b pmb) $ to_grayscale_MI avf
+processingPipe (PMRational_l pmr) (avf,_) = toString $ (apply_processors_v_r pmr) $ to_grayscale_MF avf
+processingPipe (PMInt_l pmi)      (avf,_) = toString $ (apply_processors_v_i pmi) $ to_grayscale_MI avf
+processingPipe (PMWord8_l pmb)    (avf,_) = toString $ (apply_processors_v_b pmb) $ to_grayscale_MI avf
 
 
 
