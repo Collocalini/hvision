@@ -16,6 +16,7 @@ module Recognize_demanded_processors (
 recognizeDemanded_processors,
 recognizeDemanded_processors_frame_context_sensitive,
 recognizeDemanded_processors_v,
+recognizeDemanded_processors_v',
 
 identity_i_processor',
 identity_f_processor',
@@ -140,7 +141,7 @@ recognizeDemanded_processors_v' pp = Just $ step1 pp
     step1 [] = []
     step1 (p:rest)
       |identity_v_b_processor p = (PMWord8 identity_v_b):(step1 rest)
-      |frame_difference_v_b_processor p = (PMWord8vs frame_difference_vs):(step1 rest)
+      |frame_difference_v_b_processor p = (PMWord8vs (frame_difference_vs_b, zero 1 1)):(step1 rest)
       |otherwise = step1 rest
 
 

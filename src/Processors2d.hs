@@ -25,7 +25,7 @@ module Processors2d (
 ,identity_v
 ,Matrix'(..)
 ,Matrix''(..)
-,frame_difference_vs
+,frame_difference_vs_b
 --,Processor_vs
 
 --,Processor2d(..)
@@ -77,6 +77,13 @@ identity_v  row = Processors2d.identity row
 ================================================================================================ --}
 frame_difference_vs :: Matrix'' a b => a -> State b a
 frame_difference_vs  mtr1 = Processors2d.frame_difference mtr1
+----------------------------------------------------------------------------------------------------
+
+
+{-- ================================================================================================
+================================================================================================ --}
+frame_difference_vs_b :: (DMatrix.Matrix Word8) -> State (DMatrix.Matrix Word8) (DMatrix.Matrix Word8)
+frame_difference_vs_b  mtr1 = Processors2d.frame_difference mtr1
 ----------------------------------------------------------------------------------------------------
 
 

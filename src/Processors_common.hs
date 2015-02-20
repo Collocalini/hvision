@@ -12,9 +12,11 @@
 --
 -----------------------------------------------------------------------------
 
--- {-# LANGUAGE ScopedTypeVariables #-}
+ {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE FlexibleInstances #-}
+-- {-# DataKinds #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 module Processors_common (
 
@@ -37,7 +39,7 @@ stringToFloatList_mn_dyn,
 intListToString_2to3,
 floatListToString_2to3,
 apply_processors,
-apply_processors_v,
+--apply_processors_v,
 apply_processors_v_r,
 apply_processors_v_i,
 apply_processors_v_b,
@@ -82,32 +84,24 @@ data Processor = PMRational ((Matrix Rational) -> (Matrix Rational))
    --where
 
 
-data Processor' a where
-   PMWord8vs' :: (((Matrix Word8) -> State (Matrix Word8) (Matrix Word8)), (Matrix Word8)) ->
-                Processor' (((Matrix Word8) -> State (Matrix Word8) (Matrix Word8)), (Matrix Word8))
-   --Unpack_proc :: Processor' a => a -> a
+
+data Processor' where
+   MkProcessor' :: Processible a b c => a -> Processor'
 
 
-class Processor'' a where
-   unpack_proc :: Processor' a => a -> a
+data Proc i o s where
+   PMWord8' :: (i -> i) -> Proc i () ()
+   PMWord8'' :: (i -> o) -> Proc i o ()
+   PMWord8vs' :: ((i -> o), s) -> Proc i o s
+   PMWord8vs'' :: ((i -> State s o), s) -> Proc i o s
 
-instance Processor'' (((Matrix Word8) -> State (Matrix Word8) (Matrix Word8)), (Matrix Word8)) where
+class Processible i o s where
+   run :: i -> Proc i o s -> o
+ --  run :: i -> (i -> i) -> o
+ --  run :: i -> ((i -> State s o), s) -> o
 
-
-  unpack_proc (PMWord8vs a) = a
---unpack_proc (PMWord8vs' x) = x
-
---instance Processor' (((Matrix Word8) -> State (Matrix Word8) (Matrix Word8)), (Matrix Word8)) where
---   Pack_proc a = PMWord8vs a
---   Unpack_proc (PMWord8vs a) = a
-
-
-
---type PMWord8vs a = ( (Matrix Word8 -> State a (Matrix Word8)), a)
-
-
---type PMWord8vs
-
+instance Processible (Matrix Word8) (Matrix Word8) () where
+   run i (PMWord8'' p) = p i
 
 
 
@@ -170,20 +164,57 @@ apply_processors_v_b (processor:rest) input = apply_processors_v_b rest $ proces
 
 
 {-- ================================================================================================
-================================================================================================ --}
-apply_processors_v :: a -> State Processors' a
-apply_processors_v frame = do
+================================================================================================
+apply_processors_v' :: a -> State ([PMWord8vs' a s]) a
+apply_processors_v' frame = do
    ps <- get
-   (r,s) <- step1 frame ps
-   let (p,ss) = unzip ps
-   put (zip p s)
+   let psm = map unpack_proc ps
+   let (p,ss) = unzip psm
+   let(r,s) = step1 frame (head ss) (head p)
+
+   put [MkPMWord8vs' (head p) s]
+   return r
    where
-   step1 :: a -> Processors' -> b
-   step1 f ((proc , st):rest) = runState proc st
+   step1 :: a -> s -> (a -> State s a) -> (a, s)
+   step1 f st proc = runState (proc f) st
 --apply_processors_v ((proc, st):rest) input = proc input
 --apply_processors_v ((MkProcessor2d processor):rest) input = apply_processors_v rest $ processor input
 ----------------------------------------------------------------------------------------------------
+--}
 
+
+{-
+test_apply :: (Matrix Word8) -> (Matrix Word8)
+test_apply f = --do
+   (\(a,_) -> a) $ runState (apply_processors_v f) $ [MkProcessor' $ MkPMWord8vs' frame_difference_vs_b  (zero 1 1)]
+   --return a
+-}
+
+{-- ================================================================================================
+================================================================================================ --}
+--apply_processor_v :: a -> Processor' -> a
+--apply_processor_v frame =
+
+
+
+
+{-do
+   ps <- get
+   --let psm = map (\(MkPMWord8vs' f s) -> (f,s)) ps -- map unpack_proc ps
+   --let (p,ss) = unzip psm
+   let (r,s) = step1 frame (head ps)
+
+   put [MkProcessor' s]
+   return r
+   where
+   --step1 :: a -> s -> (a -> State s a) -> (a, s)
+   --step1 f st proc = runState (proc f) st
+   step1 :: Processible a i s => i -> a -> (i , a)
+   step1 frame p = run frame p
+--apply_processors_v ((proc, st):rest) input = proc input
+--apply_processors_v ((MkProcessor2d processor):rest) input = apply_processors_v rest $ processor input
+----------------------------------------------------------------------------------------------------
+-}
 
 
 {-- ================================================================================================
