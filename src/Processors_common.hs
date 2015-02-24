@@ -44,6 +44,7 @@ apply_processors,
 apply_processors_v_r,
 apply_processors_v_i,
 apply_processors_v_b,
+apply_processors_vs_b,
 apply_processors_context_sensitive,
 stack_output,
 stack_output_each_xy,
@@ -83,34 +84,44 @@ data Processor = PMRational ((Matrix Rational) -> (Matrix Rational))
                | PMWord8vs (((Matrix Word8) -> State (Matrix Word8) (Matrix Word8)), (Matrix Word8))
               -- | PMWord8vs ((Matrix Word8) -> State (Matrix Word8) (Matrix Word8))
    --where
+   --deriving Show
 
-
+{-
 
 data Processor' where
-   MkProcessor' :: Processible i o s => Proc i o s -> Processor'
-   MkProcWord8' :: Proc (Matrix Word8) (Matrix Word8) () -> Processor'
+   MkProcessor' :: Processible i o s => Proc sl i o s -> Processor'
+  -- MkProcWord8' :: Proc (Matrix Word8) (Matrix Word8) () -> Processor'
 
 
-data  Proc i o s where
+data Proc sl i o s where
  --  PM' :: (i -> i) -> Proc i () ()
  --  PM'' :: (Processible i o ()) =>(i -> o) -> Proc i o ()
  --  PMvs' :: ((i -> o), s) -> Proc i o s
  --  PMvs'' :: ((i -> State s o), s) -> Proc i o s
-   PMWord8'' :: ((Matrix Word8) -> (Matrix Word8)) -> Proc (Matrix Word8) (Matrix Word8) ()
-   PMWord8vs' :: ((Matrix Word8) -> State (Matrix Word8) (Matrix Word8), (Matrix Word8)) -> Proc (Matrix Word8) (Matrix Word8) (Matrix Word8)
+   PMWord8'' :: ((Matrix Word8) -> (Matrix Word8)) -> Proc Proc_slot (Matrix Word8) (Matrix Word8) ()
+   PMWord8vs' :: ((Matrix Word8) -> State (Matrix Word8) (Matrix Word8), (Matrix Word8)) -> Proc Proc_slot (Matrix Word8) (Matrix Word8) (Matrix Word8)
 
-class Processible i o s where
-   run :: i -> Proc i o s -> (o, Proc i o s)
+
+data Proc_slot = PMWord8'''|PMWord8vs'''
+
+--data Proc_slot' where
+--   PMWord8'''':: Proc_slot'
+--   PMWord8vs'''':: Proc_slot'
+
+
+
+class Processible sl i o s where
+   run :: i -> Proc sl i o s -> (o, Proc sl i o s)
  --  run :: i -> (i -> i) -> o
  --  run :: i -> ((i -> State s o), s) -> o
 
-instance Processible (Matrix Word8) (Matrix Word8) () where
+instance Processible PMWord8''' (Matrix Word8) (Matrix Word8) () where
    run i x@(PMWord8'' p) = (p i, x)
 
 
 instance Processible (Matrix Word8) (Matrix Word8) (Matrix Word8) where
    run i (PMWord8vs' (p, s)) = (\(a,st)-> (a, PMWord8vs' (p, st))) $ runState (p i) s
-
+-}
 {-- ================================================================================================
 ================================================================================================ --}
 head_repeats _ [] = []
@@ -197,11 +208,32 @@ test_apply f = --do
 -}
 
 
+{-- ================================================================================================
+================================================================================================ --}
+apply_processors_vs :: a -> Processors' ->
+                            Processors' ->
+                            (a -> Processor -> (a, Processor)) ->
+                            (a, Processors')
+apply_processors_vs a x [] _ = (a,x)
+apply_processors_vs a x (p:rest) f = (\(a,ps) -> apply_processors_vs a (x ++ [ps]) rest f) $ f a p
+----------------------------------------------------------------------------------------------------
+
+
 
 {-- ================================================================================================
 ================================================================================================ --}
-apply_processor_vs_b :: (Matrix Word8) -> Processor' -> ((Matrix Word8), Processor')
-apply_processor_vs_b frame y@(MkProcWord8' p) = (\(a, x)-> (a,y)) $ run frame p
+apply_processors_vs_b :: Processors' -> (Matrix Word8) -> ((Matrix Word8), Processors')
+apply_processors_vs_b x frame = apply_processors_vs frame [] x apply_processor_vs_b
+----------------------------------------------------------------------------------------------------
+
+
+
+{-- ================================================================================================
+================================================================================================ --}
+apply_processor_vs_b :: (Matrix Word8) -> Processor -> ((Matrix Word8), Processor)
+apply_processor_vs_b frame x@(PMWord8 p) = (p frame, x)
+apply_processor_vs_b frame (PMWord8vs (p,s)) = (\(a,st) -> (a, PMWord8vs (p,st) )) $
+                                                                                runState (p frame) s
 ----------------------------------------------------------------------------------------------------
 
 --MkProcWord8'

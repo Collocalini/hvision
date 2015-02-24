@@ -42,6 +42,7 @@ data VideoProcessing = VideoProcessing {
    data_file :: FilePath
   ,output_video_file :: Maybe FilePath
   ,processors :: Processors
+  ,processors' :: Processors'
   ,itd :: DI.IterateData
   ,cleanup :: IO ()
    }
@@ -52,7 +53,9 @@ data VideoProcessing = VideoProcessing {
 ===============================================================================================  --}
 data_process_ffmpeg :: VideoProcessing -> IO ()
 data_process_ffmpeg vp@(VideoProcessing {output_video_file=Nothing}) = do evalStateT (readVideo $$ processVideoToString) vp
-data_process_ffmpeg vp@(VideoProcessing {output_video_file=Just "-"}) = do evalStateT (readVideo $$ processVideoToPngStdOut) vp
+--data_process_ffmpeg vp@(VideoProcessing {output_video_file=Just "-"}) = do evalStateT (readVideo $$ processVideoToPngStdOut) vp
+data_process_ffmpeg vp@(VideoProcessing {output_video_file=Just "-"}) = do evalStateT (readVideo $$ processVsVideoToPngStdOut) vp
+
 
 data_process_ffmpeg vp = do evalStateT (readVideo $$ processVideoToVideo) vp
 
@@ -174,6 +177,14 @@ imageWriterEnd' w h s = do
 
 
 
+--processingPipeVOVs (PMRational_l pmr) (avf,_) = toImageRGB8 $ (apply_processors_v_r pmr) $ to_grayscale_MF avf
+--processingPipeVOVs (PMInt_l pmi)      (avf,_) = toImageRGB8 $ (apply_processors_v_i pmi) $ to_grayscale_MI avf
+
+
+processingPipeVOVs pmb (avf,_) = (\(a, ps) -> (toImageRGB8 a,ps)) $ (apply_processors_vs_b pmb) $ to_grayscale_MI avf
+
+
+
 processingPipeVO (PMRational_l pmr) (avf,_) = toImageRGB8 $ (apply_processors_v_r pmr) $ to_grayscale_MF avf
 processingPipeVO (PMInt_l pmi)      (avf,_) = toImageRGB8 $ (apply_processors_v_i pmi) $ to_grayscale_MI avf
 processingPipeVO (PMWord8_l pmb)    (avf,_) = toImageRGB8 $ (apply_processors_v_b pmb) $ to_grayscale_MI avf
@@ -204,6 +215,31 @@ processVideoToPngStdOut = do
      Nothing -> do
         liftIO cleanup
 
+
+
+
+{-- ================================================================================================
+===============================================================================================  --}
+processVsVideoToPngStdOut :: Sink (CPic.Image CPic.PixelRGB8, Double) (StateT VideoProcessing IO) ()
+processVsVideoToPngStdOut = do
+   frame <- await
+   vp_state@(VideoProcessing { --output_video_file = Just output_video_file
+                     processors' = processors'
+                    ,itd = itd
+                    ,cleanup = cleanup}) <- get
+
+   case frame of
+     Just frame@(f@(CPic.Image {CPic.imageWidth  = width
+                            ,CPic.imageHeight = height}),_) -> do
+
+        (\(a,ps) -> do
+           --liftIO $! putStr "*"
+           liftIO $! B.putStr $ CPic.encodePng a
+           put ((\vp -> vp {processors' = ps}) vp_state) ) $ processingPipeVOVs processors' frame
+
+        processVsVideoToPngStdOut
+     Nothing -> do
+        liftIO cleanup
 
 
 

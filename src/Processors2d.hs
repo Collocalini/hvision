@@ -104,6 +104,7 @@ frame_difference'  mtr1 mtr2 = DMatrix.matrix w h (\c -> fromIntegral $ abs $ (m
 frame_difference'' :: (DMatrix.Matrix Word8) -> State (DMatrix.Matrix Word8) (DMatrix.Matrix Word8)
 frame_difference''  mtr1 = do
    mtr2 <- get
+   put mtr1
    return $ frame_difference' mtr1 mtr2
 ----------------------------------------------------------------------------------------------------
 

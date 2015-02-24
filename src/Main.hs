@@ -359,12 +359,18 @@ routine args
 
      has_2d_video :: Bool
      has_2d_video = -- True
-        hasit $ (\(CmdA.InputArguments {CmdA.data_process_v = d}) -> d) inputArgs'
+        (hasit $ (\(CmdA.InputArguments {CmdA.data_process_v = d}) -> d) inputArgs')
+          || (hasit' $ (\(CmdA.InputArguments {CmdA.data_process_vs = d}) -> d) inputArgs')
         where
         hasit :: Maybe Processors -> Bool
         --hasit (Just []) = False
         hasit Nothing = False
         hasit _  = True
+
+        hasit' :: Maybe Processors' -> Bool
+        --hasit (Just []) = False
+        hasit' Nothing = False
+        hasit' _  = True
 
      matrix_stacking_required :: Bool
      matrix_stacking_required
@@ -524,6 +530,7 @@ routine args
        (Vd.VideoProcessing {
                               Vd.data_file = dfile
                              ,Vd.processors = proc
+                             ,Vd.processors' = proc'
                              ,Vd.output_video_file = ovfile
                              ,Vd.itd = itd
                              ,Vd.cleanup = return ()}
@@ -532,6 +539,7 @@ routine args
         dfile = (\(CmdA.InputArguments {CmdA.data_file = (Just d)}) -> d) inputArgs'
         ovfile = (\(CmdA.InputArguments {CmdA.output_video_file = ( d)}) -> d) inputArgs'
         proc  = (\(CmdA.InputArguments {CmdA.data_process_v = (Just d)}) -> d) inputArgs'
+        proc'  = (\(CmdA.InputArguments {CmdA.data_process_vs = (Just d)}) -> d) inputArgs'
         gfile = (\(CmdA.InputArguments {CmdA.gnuplot_file = g}) -> g) inputArgs'
         rfo   = (\(CmdA.InputArguments {CmdA.repeat_frames_of_output = r}) -> r) inputArgs'
         itd   = IterateData {gnuplot_file = gfile, repeat_frames_of_output = rfo}

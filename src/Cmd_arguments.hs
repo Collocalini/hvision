@@ -79,6 +79,7 @@ data InputArguments = InputArguments {
      ,data_process_cs :: Maybe [( [[(Dynamic, Dynamic)]] -> [[(Processor_data, Processor_data)]] )]
      --,data_process_v :: Maybe [(Matrix Rational) -> (Matrix Rational)]
      ,data_process_v :: Maybe Processors
+     ,data_process_vs :: Maybe Processors'
      ,use_columns :: Maybe (Int, Int)
      ,repeat_frames_of_output :: Maybe Int
      ,matrix_stacking :: Maybe Bool
@@ -103,6 +104,7 @@ inputArgs tm = InputArguments {
   ,data_process = data_process'
   ,data_process_cs = data_process_cs'
   ,data_process_v = data_process_v'
+  ,data_process_vs = data_process_vs'
   ,use_columns = use_columns'
   ,repeat_frames_of_output = repeat_frames_of_output'
   ,matrix_stacking = matrix_stacking'
@@ -191,6 +193,11 @@ inputArgs tm = InputArguments {
     where
     s = (DMap.findWithDefault default_data_process argument_data_process tm)
 
+  data_process_vs'
+    |s/= default_data_process = recognizeDemanded_processors_v' $ get_demanded_processors s
+    |otherwise = Nothing
+    where
+    s = (DMap.findWithDefault default_data_process argument_data_process tm)
 
 
 
