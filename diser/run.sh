@@ -10,7 +10,7 @@ diser --gnuplot-file plot1.gpi \
       --data-file x.mp4 \
       --output-video-file - \
       --data-process frame_difference_v_b \
-     # |ffmpeg -f image2pipe -i pipe: -f avi -vcodec mjpeg -y -s 1280x720 xxx7.avi
+      |ffmpeg -f image2pipe -i pipe: -f avi -vcodec mjpeg -y -s 1280x720 xxx8.avi
 
 : << 'xxx'
 

@@ -91,7 +91,7 @@ frame_difference_vs_b  mtr1 = Processors2d.frame_difference mtr1
 {-- ================================================================================================
 ================================================================================================ --}
 frame_difference' :: (DMatrix.Matrix Word8) -> (DMatrix.Matrix Word8) -> (DMatrix.Matrix Word8)
-frame_difference'  mtr1 mtr2 = DMatrix.matrix w h (\c -> fromIntegral $ abs $ (mtr1 ! c) - (mtr2 ! c))
+frame_difference'  mtr1 mtr2 = DMatrix.matrix w h (\c -> fromIntegral $ abs $ (fromIntegral $ mtr1 ! c) - (fromIntegral $ mtr2 ! c))
    where
    --cords = [(y,x) | x <- [1..w], y <- [1..h]]
    w = nrows mtr1
@@ -105,7 +105,11 @@ frame_difference'' :: (DMatrix.Matrix Word8) -> State (DMatrix.Matrix Word8) (DM
 frame_difference''  mtr1 = do
    mtr2 <- get
    put mtr1
-   return $ frame_difference' mtr1 mtr2
+   case right_size mtr2 of
+      True -> return $ frame_difference' mtr1 mtr2
+      False -> return $ zero (nrows mtr1) (ncols mtr1)
+   where
+   right_size mtr2 = ((nrows mtr1)<=(nrows mtr2)) && ((ncols mtr1)<=(ncols mtr2))
 ----------------------------------------------------------------------------------------------------
 
 
