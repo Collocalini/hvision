@@ -4,13 +4,13 @@
 #./diser --gnuplot-file plot.gpi --range-of-files 1..1000 --data-bypass-mode --data-file /home/hokum/Documents/pixels_to_signals/sda3/temp/new_Automatic_Traffic_Surveillance.avi/data_files/data |gnuplot -persist|ffmpeg -f mjpeg -i pipe: -f avi -vcodec copy -s 640x480 pipe:|mplayer -profile prof3 -
 #./diser --gnuplot-file plot.gpi --range-of-files 1..1000 --data-process identity --data-file /home/hokum/Documents/pixels_to_signals/sda3/temp/new_Automatic_Traffic_Surveillance.avi/data_files/data |gnuplot -persist|ffmpeg -f mjpeg -i pipe: -f avi -vcodec copy -s 640x480 pipe:|mplayer -profile prof3 -
 
-
+# --data-file x.mp4 \
 
 diser --gnuplot-file plot1.gpi \
-      --data-file x.mp4 \
+      --data-file /home/hokum/Downloads/tmp/a.mp4 \
       --output-video-file - \
-      --data-process frame_difference_v_b \
-      |ffmpeg -f image2pipe -i pipe: -f avi -vcodec mjpeg -y -s 1280x720 xxx8.avi
+      --data-process frame_difference_v_gsRGB8 \
+      |ffmpeg -f image2pipe -i pipe: -f avi -vcodec mjpeg -y -s 1280x720 xxx9.avi
 
 : << 'xxx'
 

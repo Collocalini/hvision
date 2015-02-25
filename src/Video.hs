@@ -54,11 +54,10 @@ data VideoProcessing = VideoProcessing {
 data_process_ffmpeg :: VideoProcessing -> IO ()
 data_process_ffmpeg vp@(VideoProcessing {output_video_file=Nothing}) = do evalStateT (readVideo $$ processVideoToString) vp
 --data_process_ffmpeg vp@(VideoProcessing {output_video_file=Just "-"}) = do evalStateT (readVideo $$ processVideoToPngStdOut) vp
-data_process_ffmpeg vp@(VideoProcessing {output_video_file=Just "-"}) = do evalStateT (readVideo $$ processVsVideoToPngStdOut) vp
-
+--data_process_ffmpeg vp@(VideoProcessing {output_video_file=Just "-"}) = do evalStateT (readVideo $$ processVsVideoToPngStdOut) vp
+data_process_ffmpeg vp@(VideoProcessing {output_video_file=Just "-"}) = do evalStateT (readVideo $$ processVs_straightApply_VideoToPngStdOut) vp
 
 data_process_ffmpeg vp = do evalStateT (readVideo $$ processVideoToVideo) vp
-
 ----------------------------------------------------------------------------------------------------
 
 
@@ -229,8 +228,7 @@ processVsVideoToPngStdOut = do
                     ,cleanup = cleanup}) <- get
 
    case frame of
-     Just frame@(f@(CPic.Image {CPic.imageWidth  = width
-                            ,CPic.imageHeight = height}),_) -> do
+     Just frame@(f,_) -> do
 
         (\(a,ps) -> do
            --liftIO $! putStr "*"
@@ -241,6 +239,28 @@ processVsVideoToPngStdOut = do
      Nothing -> do
         liftIO cleanup
 
+
+{-- ================================================================================================
+===============================================================================================  --}
+processVs_straightApply_VideoToPngStdOut :: Sink (CPic.Image CPic.PixelRGB8, Double) (StateT VideoProcessing IO) ()
+processVs_straightApply_VideoToPngStdOut = do
+   frame <- await
+   vp_state@(VideoProcessing { --output_video_file = Just output_video_file
+                     processors' = processors'
+                    ,itd = itd
+                    ,cleanup = cleanup}) <- get
+
+   case frame of
+     Just (f,_) -> do
+
+        (\(a,ps) -> do
+           --liftIO $! putStr "*"
+           liftIO $! B.putStr $ CPic.encodePng a
+           put ((\vp -> vp {processors' = ps}) vp_state) ) $ apply_processors_vs_rgb8  processors' f
+
+        processVs_straightApply_VideoToPngStdOut
+     Nothing -> do
+        liftIO cleanup
 
 
 

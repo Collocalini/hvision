@@ -26,6 +26,7 @@ module Processors2d (
 ,Matrix'(..)
 ,Matrix''(..)
 ,frame_difference_vs_b
+,frame_difference_vs_gsrgb8
 --,Processor_vs
 
 --,Processor2d(..)
@@ -85,6 +86,63 @@ frame_difference_vs  mtr1 = Processors2d.frame_difference mtr1
 frame_difference_vs_b :: (DMatrix.Matrix Word8) -> State (DMatrix.Matrix Word8) (DMatrix.Matrix Word8)
 frame_difference_vs_b  mtr1 = Processors2d.frame_difference mtr1
 ----------------------------------------------------------------------------------------------------
+
+{-- ================================================================================================
+================================================================================================ --}
+frame_difference_vs_gsrgb8 :: (CPic.Image CPic.PixelRGB8) ->
+                        State (CPic.Image CPic.PixelRGB8) (CPic.Image CPic.PixelRGB8)
+frame_difference_vs_gsrgb8  mtr1 = Processors2d.frame_difference mtr1
+----------------------------------------------------------------------------------------------------
+
+
+{-- ================================================================================================
+================================================================================================ --}
+frame_difference_gsrgb8 :: CPic.Image CPic.PixelRGB8 ->
+                           CPic.Image CPic.PixelRGB8 ->
+                           CPic.Image CPic.PixelRGB8
+frame_difference_gsrgb8  mtr1@(CPic.Image {CPic.imageWidth  = w
+                                          ,CPic.imageHeight = h}) mtr2 = CPic.generateImage
+   (\x y -> step1 (CPic.pixelAt mtr1 x y) (CPic.pixelAt mtr2 x y))
+   w h
+   where
+   step1 :: CPic.PixelRGB8 -> CPic.PixelRGB8 -> CPic.PixelRGB8
+   step1 (CPic.PixelRGB8 rl8 gl8 bl8) (CPic.PixelRGB8 rr8 gr8 br8) = p (gsl - gsr)
+     where
+     rfl = fromIntegral rl8
+     gfl = fromIntegral gl8
+     bfl = fromIntegral bl8
+     gsl = round ((rfl+gfl+bfl) / 3)
+
+     rfr= fromIntegral rr8
+     gfr= fromIntegral gr8
+     bfr= fromIntegral br8
+     gsr = round ((rfr+gfr+bfr) / 3)
+
+     p :: Int -> CPic.PixelRGB8
+     p n
+        |n<0 = CPic.PixelRGB8 (fromIntegral $ abs n) 0 0
+        |n>0 = CPic.PixelRGB8 0 (fromIntegral $ abs n) 0
+        |n==0 = CPic.PixelRGB8 0 0 0
+        |otherwise = CPic.PixelRGB8 0 0 0
+----------------------------------------------------------------------------------------------------
+
+{-- ================================================================================================
+================================================================================================ --}
+frame_difference_gsrgb8' :: (CPic.Image CPic.PixelRGB8) ->
+                      State (CPic.Image CPic.PixelRGB8) (CPic.Image CPic.PixelRGB8)
+frame_difference_gsrgb8'  mtr1@(CPic.Image {CPic.imageWidth  = w
+                                           ,CPic.imageHeight = h}) = do
+   mtr2@(CPic.Image {CPic.imageWidth  = w'
+                    ,CPic.imageHeight = h'}) <- get
+   put mtr1
+   case right_size w' h' of
+      True -> return $ frame_difference_gsrgb8 mtr1 mtr2
+      False -> return $ img
+   where
+   right_size w' h' = (w<=w') && (h<=h')
+   img = CPic.generateImage (\x y -> CPic.PixelRGB8 0 0 0) w h
+----------------------------------------------------------------------------------------------------
+
 
 
 
@@ -275,9 +333,12 @@ class Matrix'' p s where
   -- toImageRGB8 :: Matrix' p => p -> CPic.Image CPic.PixelRGB8
    frame_difference :: Matrix'' p s => p -> State s p
 
-
 instance Matrix'' (DMatrix.Matrix Word8) (DMatrix.Matrix Word8) where
    frame_difference mtr = frame_difference'' mtr
+
+
+instance Matrix'' (CPic.Image CPic.PixelRGB8) (CPic.Image CPic.PixelRGB8) where
+   frame_difference mtr = frame_difference_gsrgb8' mtr
 
 
 --instance Processor_vs (DMatrix.Matrix Word8) (DMatrix.Matrix Word8)

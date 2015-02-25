@@ -45,6 +45,7 @@ apply_processors_v_r,
 apply_processors_v_i,
 apply_processors_v_b,
 apply_processors_vs_b,
+apply_processors_vs_rgb8,
 apply_processors_context_sensitive,
 stack_output,
 stack_output_each_xy,
@@ -82,7 +83,9 @@ data Processor = PMRational ((Matrix Rational) -> (Matrix Rational))
                | PMInt ((Matrix Int) -> (Matrix Int))
                | PMWord8 ((Matrix Word8) -> (Matrix Word8))
                | PMWord8vs (((Matrix Word8) -> State (Matrix Word8) (Matrix Word8)), (Matrix Word8))
-              -- | PMWord8vs ((Matrix Word8) -> State (Matrix Word8) (Matrix Word8))
+               | PMRGB8vs ((CPic.Image CPic.PixelRGB8) ->
+                     State (CPic.Image CPic.PixelRGB8) (CPic.Image CPic.PixelRGB8)
+                          ,(CPic.Image CPic.PixelRGB8))
    --where
    --deriving Show
 
@@ -227,6 +230,15 @@ apply_processors_vs_b x frame = apply_processors_vs frame [] x apply_processor_v
 ----------------------------------------------------------------------------------------------------
 
 
+{-- ================================================================================================
+================================================================================================ --}
+apply_processors_vs_rgb8 :: Processors' -> (CPic.Image CPic.PixelRGB8) ->
+                                          ((CPic.Image CPic.PixelRGB8), Processors')
+apply_processors_vs_rgb8 x frame = apply_processors_vs frame [] x apply_processor_vs_rgb8
+----------------------------------------------------------------------------------------------------
+
+
+
 
 {-- ================================================================================================
 ================================================================================================ --}
@@ -235,6 +247,18 @@ apply_processor_vs_b frame x@(PMWord8 p) = (p frame, x)
 apply_processor_vs_b frame (PMWord8vs (p,s)) = (\(a,st) -> (a, PMWord8vs (p,st) )) $
                                                                                 runState (p frame) s
 ----------------------------------------------------------------------------------------------------
+
+
+{-- ================================================================================================
+================================================================================================ --}
+apply_processor_vs_rgb8 :: (CPic.Image CPic.PixelRGB8) -> Processor ->
+                          ((CPic.Image CPic.PixelRGB8), Processor)
+apply_processor_vs_rgb8 frame (PMRGB8vs (p,s)) = (\(a,st) -> (a, PMRGB8vs (p,st) )) $
+                                                                                runState (p frame) s
+
+----------------------------------------------------------------------------------------------------
+
+
 
 --MkProcWord8'
 

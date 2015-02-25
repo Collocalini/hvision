@@ -48,6 +48,7 @@ import Data.Dynamic
 import Data.Matrix
 import Data.List
 import Data.Word
+import qualified Codec.Picture as CPic
 
 recognizeDemanded_processors :: [String] ->
                            [( [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)] )]
@@ -142,7 +143,10 @@ recognizeDemanded_processors_v' pp = Just $ step1 pp
     step1 (p:rest)
       |identity_v_b_processor p = (PMWord8 identity_v_b):(step1 rest)
       |frame_difference_v_b_processor p = (PMWord8vs (frame_difference_vs_b, zero 0 0 )):(step1 rest)
+      |frame_difference_v_gsRGB8_processor p = (PMRGB8vs (frame_difference_vs_gsrgb8, img)):(step1 rest)
       |otherwise = step1 rest
+      where
+      img = CPic.generateImage (\x y -> CPic.PixelRGB8 0 0 0) 0 0
 
 
 --p2dpack
@@ -272,6 +276,11 @@ ad_hock_f_processor' str
 frame_difference_v_b_processor :: String -> Bool
 frame_difference_v_b_processor str
    |"frame_difference_v_b" == str = True
+   |otherwise = False
+
+frame_difference_v_gsRGB8_processor :: String -> Bool
+frame_difference_v_gsRGB8_processor str
+   |"frame_difference_v_gsRGB8" == str = True
    |otherwise = False
 
 
