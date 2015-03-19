@@ -43,6 +43,7 @@ import ImageManipulation
 import Recognize_demanded_processors
 import Data_iterators
 import qualified Video as Vd
+import qualified What_i_have as Wih
 ---end of imports from this project
 
 
@@ -297,16 +298,6 @@ data_processMultipage_matrix_output tag_DMap range processors adaptTo prepare_in
 
 
 
-
-
-
-
-
-
-
-
-
-
 {-- ================================================================================================
 ================================================================================================ --}
 routine:: [String] -> IO ()
@@ -322,7 +313,7 @@ routine args
        |
        V  --}
      where
-     justtest = do  putStrLn "test"
+     justtest =  wih --do  putStrLn "test"
 
 
 
@@ -543,6 +534,23 @@ routine args
         gfile = (\(CmdA.InputArguments {CmdA.gnuplot_file = g}) -> g) inputArgs'
         rfo   = (\(CmdA.InputArguments {CmdA.repeat_frames_of_output = r}) -> r) inputArgs'
         itd   = IterateData {gnuplot_file = gfile, repeat_frames_of_output = rfo}
+
+
+
+     wih = do d <- readFile dfile
+              Wih.data_process_common_matrix_debug  gfile rfo d
+
+        where
+        dfile = (\(CmdA.InputArguments {CmdA.data_file = (Just d)}) -> d) inputArgs'
+        --ovfile = (\(CmdA.InputArguments {CmdA.output_video_file = ( d)}) -> d) inputArgs'
+        --proc  = (\(CmdA.InputArguments {CmdA.data_process_v = (Just d)}) -> d) inputArgs'
+        --proc'  = (\(CmdA.InputArguments {CmdA.data_process_vs = (Just d)}) -> d) inputArgs'
+        gfile = (\(CmdA.InputArguments {CmdA.gnuplot_file = g}) -> g) inputArgs'
+        rfo   = (\(CmdA.InputArguments {CmdA.repeat_frames_of_output = r}) -> r) inputArgs'
+        --itd   = IterateData {gnuplot_file = gfile, repeat_frames_of_output = rfo}
+
+
+
 
 
 -----end of peculier section

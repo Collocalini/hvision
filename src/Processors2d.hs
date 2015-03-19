@@ -27,6 +27,7 @@ module Processors2d (
 ,Matrix''(..)
 ,frame_difference_vs_b
 ,frame_difference_vs_gsrgb8
+,derivative_i_tapering_stacking_ready
 --,Processor_vs
 
 --,Processor2d(..)
@@ -34,12 +35,13 @@ module Processors2d (
 ) where
 
 import qualified Data.Matrix as DMatrix
+import Data.Dynamic
 import Image_loading
 import qualified Codec.Picture as CPic
 import Data.Matrix
 import Data.Word
 import Control.Monad.State
---import Processors_common
+import Processors_common
 
 {-- ================================================================================================
 ================================================================================================ --}
@@ -181,6 +183,61 @@ frame_difference''' (Processor_vs mtr1 mtr2) =
 ----------------------------------------------------------------------------------------------------
 
 -}
+
+
+
+{-- ================================================================================================
+================================================================================================ --}
+derivative_i_tapering :: [Int] -> [[Int]]
+derivative_i_tapering  [] = []
+derivative_i_tapering  row = row : derivative_i_tapering (step1 row)
+     where
+        step1 :: [Int] -> [Int]
+        step1  [] = []
+        step1 (_:[]) = []
+        step1 (x:rest) = ((\x' -> x-x') $ head rest):(step1 rest)
+----------------------------------------------------------------------------------------------------
+
+{--    |
+       |
+       |
+       |
+       V  --}
+
+derivative_i_tapering_dyn :: [Dynamic] -> [[Processor_data]]
+derivative_i_tapering_dyn  row =
+  map (
+      map (\(x) -> (Pd (toDyn x) (show . \z -> fromDyn z (0:: Int) ) ) )
+      ) $
+  derivative_i_tapering $
+  map (\(x) -> ((fromDyn x 0):: Int )) row
+
+
+{--    |
+       |
+       |
+       |
+       V  --}
+{-- ================================================================================================
+================================================================================================ --}
+derivative_i_tapering_stacking_ready :: [Dynamic] -> [[[(Processor_data, Processor_data)]]]
+derivative_i_tapering_stacking_ready  []  = []
+derivative_i_tapering_stacking_ready  row =
+
+   map (\x ->
+       [zip  rowl x]
+       --zip [1..]
+       ) $ dr
+
+   where
+   rowl :: [Processor_data]
+   rowl = map toPd $ [1..] -- ::[Int]
+   toPd :: Int -> Processor_data
+   toPd x =  Pd (toDyn x) (show . \z -> fromDyn z (0:: Int) )
+
+   dr :: [[Processor_data]]
+   dr = derivative_i_tapering_dyn row
+----------------------------------------------------------------------------------------------------
 
 
 

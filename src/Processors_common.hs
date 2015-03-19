@@ -63,7 +63,7 @@ import Global
 import Data.Matrix
 import qualified Codec.Picture as CPic
 import Image_loading
-import Processors2d
+--import Processors2d
 import Data.Word
 --import Codec.FFmpeg.Juicy
 import Control.Monad.State
