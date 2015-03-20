@@ -40,7 +40,8 @@ data_process_common_matrix_debug  gfile rfo x =
                                    toStringTable_matrix $
                                    stack_output_matrix $
                                    derivative_i_tapering_stacking_ready $
-                                   ((\(_,r)-> map toDyn r) $ unzip $ stringToIntList_mn 1 3 x))
+                                   --derivative_i_fork_stacking_ready $
+                                   ((\(_,r)-> map toDyn r) $ unzip $ stringToIntegerList_mn 1 3 x))
                                    DI.IterateData {DI.gnuplot_file = gfile, DI.repeat_frames_of_output = rfo}
   --where
   --processingPipe x =

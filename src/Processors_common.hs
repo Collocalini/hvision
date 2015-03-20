@@ -35,6 +35,8 @@ floatListToString,
 
 stringToIntList_mn,
 stringToIntList_mn_dyn,
+stringToIntegerList_mn,
+stringToIntegerList_mn_dyn,
 stringToFloatList_mn,
 stringToFloatList_mn_dyn,
 intListToString_2to3,
@@ -525,6 +527,26 @@ stringToIntList_mn_dyn :: Int -> Int -> String -> [(Dynamic, Dynamic)]
 stringToIntList_mn_dyn m n str =  map (\(x, y) -> ((toDyn x), (toDyn y)) ) $
                                                                           stringToIntList_mn m n str
 ----------------------------------------------------------------------------------------------------
+
+
+{-- ================================================================================================
+================================================================================================ --}
+stringToIntegerList_mn :: Int -> Int -> String ->  [(Integer, Integer)]
+stringToIntegerList_mn m n str =  map (step1 m n) $ lines str
+  where
+  step1 :: Int -> Int -> String ->   (Integer, Integer)
+  step1 m n str = (\x -> (read $ head $ drop (m-1) x , read $ head $ drop (n-1) x) ) $ words str
+{--    |
+       |
+       |
+       |
+       V  --}
+stringToIntegerList_mn_dyn :: Int -> Int -> String -> [(Dynamic, Dynamic)]
+stringToIntegerList_mn_dyn m n str =  map (\(x, y) -> ((toDyn x), (toDyn y)) ) $
+                                                                          stringToIntegerList_mn m n str
+----------------------------------------------------------------------------------------------------
+
+
 
 {-- ================================================================================================
 ================================================================================================ --}
