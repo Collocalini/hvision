@@ -1,12 +1,12 @@
 name: diser
 version: 0.0.1
-cabal-version: -any
+cabal-version: >=1.2
 build-type: Simple
 license: PublicDomain
 license-file: license
 description: .
 data-dir: ""
- 
+
 executable diser
     build-depends: JuicyPixels -any, base -any, bytestring -any,
                    conduit -any, containers -any, deepseq -any, ffmpeg-light -any,
@@ -18,5 +18,6 @@ executable diser
     other-modules: Data_iterators Processors ImageManipulation
                    Image_loading AdHoc Global Processors_common Processors2d
                    Recognize_demanded_processors Video Cmd_arguments What_i_have
+                   ShakingAbacus
     ghc-options: -Wall -fwarn-tabs
- 
+

@@ -69,7 +69,7 @@ readVideo :: Source (StateT VideoProcessing IO) (CPic.Image CPic.PixelRGB8, Doub
 readVideo = do
    vp_state@(VideoProcessing {data_file = data_file}) <- get
    liftIO initFFmpeg
-   (getFrame, cleanup) <- liftIO $ imageReaderTime data_file
+   (getFrame, cleanup) <- liftIO $ imageReaderTime $ File data_file
    put ((\vp -> vp {cleanup = cleanup}) vp_state)
    step2 getFrame
    where

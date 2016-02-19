@@ -44,6 +44,7 @@ import Recognize_demanded_processors
 import Data_iterators
 import qualified Video as Vd
 import qualified What_i_have as Wih
+import qualified ShakingAbacus as Sab
 ---end of imports from this project
 
 
@@ -313,7 +314,9 @@ routine args
        |
        V  --}
      where
-     justtest =  wih --do  putStrLn "test"
+     justtest =sab
+               --  wih
+               --do  putStrLn "test"
 
 
 
@@ -536,9 +539,17 @@ routine args
         itd   = IterateData {gnuplot_file = gfile, repeat_frames_of_output = rfo}
 
 
-
+     --what i have test
      wih = do d <- readFile dfile
               Wih.data_process_common_matrix_debug  gfile rfo d
+        where
+        dfile = (\(CmdA.InputArguments {CmdA.data_file = (Just d)}) -> d) inputArgs'
+        gfile = (\(CmdA.InputArguments {CmdA.gnuplot_file = g}) -> g) inputArgs'
+        rfo   = (\(CmdA.InputArguments {CmdA.repeat_frames_of_output = r}) -> r) inputArgs'
+
+     --shaiking abakus test
+     sab = putStrLn $ unlines $ map show $ Sab.permuteAbac 3 [0,0,1,1,0,0]
+
 
         where
         dfile = (\(CmdA.InputArguments {CmdA.data_file = (Just d)}) -> d) inputArgs'
