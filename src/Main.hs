@@ -547,21 +547,34 @@ routine args
         gfile = (\(CmdA.InputArguments {CmdA.gnuplot_file = g}) -> g) inputArgs'
         rfo   = (\(CmdA.InputArguments {CmdA.repeat_frames_of_output = r}) -> r) inputArgs'
 
-     --shaiking abakus test
-     sab = putStrLn $ unlines $ map show $ Sab.permuteAbac 3 [0,0,1,1,0,0]
 
 
-        where
-        dfile = (\(CmdA.InputArguments {CmdA.data_file = (Just d)}) -> d) inputArgs'
-        --ovfile = (\(CmdA.InputArguments {CmdA.output_video_file = ( d)}) -> d) inputArgs'
-        --proc  = (\(CmdA.InputArguments {CmdA.data_process_v = (Just d)}) -> d) inputArgs'
-        --proc'  = (\(CmdA.InputArguments {CmdA.data_process_vs = (Just d)}) -> d) inputArgs'
-        gfile = (\(CmdA.InputArguments {CmdA.gnuplot_file = g}) -> g) inputArgs'
-        rfo   = (\(CmdA.InputArguments {CmdA.repeat_frames_of_output = r}) -> r) inputArgs'
-        --itd   = IterateData {gnuplot_file = gfile, repeat_frames_of_output = rfo}
-
-
-
+      --shaiking abakus test
+     sab = do
+      gnuplot<-readFile "abacus.gpi"
+      putStrLn gnuplot
+      putStrLn $ unlines $ map unlines
+         $ perPermutationSet
+         $ map (\(x,y,z)-> (show x) ++ " " ++ (show y) ++ " " ++ [z] ++ " ") $ zip3 xs ys
+         $ concat $ concat $ intersperse (replicate singlePermutationSetLength "2")
+         $ map singlePermutationSet
+         $ map (\(l,r)-> l ++ "1" ++ r) $ zip (map (\x-> replicate x     '0') [0..inputLength-1])
+                                              (map (\x-> replicate (inputLength-1-x) '0') [0..inputLength-1])
+      putStrLn "EOD"
+      where
+      inputLength = 20
+      selectionLength = 8
+      singlePermutationSet = Sab.permuteAbac selectionLength
+      singlePermutationSetLength = length $ singlePermutationSet [1..inputLength]
+      xs = concatMap (replicate singlePermutationSetLength) [1..]
+           --(map (\(l,r)-> r+l) $ zip (cycle [0..selectionLength-1])
+           -- $ concatMap (replicate (singlePermutationSetLength*selectionLength)) [1,1+selectionLength..])
+      ys = cycle [1..singlePermutationSetLength]
+           --(cycle $ concatMap (replicate selectionLength) [1..singlePermutationSetLength])
+      perPermutationSet [] = []
+      perPermutationSet x = (\(l,r)-> l:(perPermutationSet r))
+                                  --  $ splitAt (singlePermutationSetLength*selectionLength) x
+                                    $ splitAt singlePermutationSetLength x
 
 
 -----end of peculier section
