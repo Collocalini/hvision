@@ -20,6 +20,7 @@ argument_data_from_stdin,
 argument_gnuplot_file ,
 argument_range_of_files ,
 argument_test,
+argument_shakingAbacusTest,
 argument_data_bypass_mode ,
 argument_data_process,
 argument_use_columns,
@@ -35,6 +36,7 @@ default_data_from_stdin,
 default_gnuplot_file,
 default_range_of_files,
 default_test,
+default_shakingAbacusTest,
 default_data_bypass_mode,
 default_data_process,
 default_use_columns,
@@ -74,6 +76,7 @@ data InputArguments = InputArguments {
      ,gnuplot_file :: Maybe FilePath
      ,range_of_files :: Maybe [Int]
      ,test :: Maybe Bool
+     ,shakingAbacusTest :: Maybe Bool
      ,data_bypass_mode :: Maybe Bool
      ,data_process :: Maybe [( [(Dynamic, Dynamic)] -> [(Processor_data, Processor_data)] )]
      ,data_process_cs :: Maybe [( [[(Dynamic, Dynamic)]] -> [[(Processor_data, Processor_data)]] )]
@@ -100,6 +103,7 @@ inputArgs tm = InputArguments {
   ,gnuplot_file = gnuplot_file'
   ,range_of_files = range_of_files'
   ,test = test'
+  ,shakingAbacusTest = shakingAbacusTest'
   ,data_bypass_mode = data_bypass_mode'
   ,data_process = data_process'
   ,data_process_cs = data_process_cs'
@@ -165,6 +169,13 @@ inputArgs tm = InputArguments {
     |otherwise = Nothing
     where
     s = (DMap.findWithDefault default_test argument_test tm)
+
+  shakingAbacusTest'
+    |s == "True" = Just True
+    |s == "False" = Just False
+    |otherwise = Nothing
+    where
+    s = (DMap.findWithDefault default_shakingAbacusTest argument_shakingAbacusTest tm)
 
   data_bypass_mode'
     |s == "True" = Just True
@@ -245,6 +256,7 @@ argument_data_from_stdin = "data-from-stdin"
 argument_gnuplot_file = "gnuplot-file"
 argument_range_of_files = "range-of-files" -- if range [5..10] then read data5, data6, ... data10
 argument_test = "test"
+argument_shakingAbacusTest = "shaking-abacus-test"
 argument_data_bypass_mode = "data-bypass-mode"
 argument_data_process = "data-process"
 argument_use_columns = "use-columns"
@@ -261,6 +273,7 @@ default_multipage_data_file = "-"
 default_gnuplot_file = ""
 default_range_of_files = "" -- if range [5..10] then read data5, data6, ... data10
 default_test = "false"
+default_shakingAbacusTest = "false"
 default_data_bypass_mode = "false"
 default_data_process = "-"
 default_use_columns = "1:2"
@@ -275,6 +288,7 @@ default_coords = "-"
 
 flags = [
          argument_test,
+         argument_shakingAbacusTest,
          argument_data_bypass_mode,
          argument_single_data_file,
          argument_matrix_stacking
@@ -304,6 +318,7 @@ tag_DMap [] = DMap.fromList [
         (argument_gnuplot_file,            default_gnuplot_file ),
         (argument_range_of_files,          default_range_of_files),
         (argument_test ,                   default_test),
+        (argument_shakingAbacusTest,       default_shakingAbacusTest),
         (argument_data_bypass_mode,        default_data_bypass_mode),
         (argument_single_data_file,        default_single_data_file),
         (argument_multipage_data_file,     default_multipage_data_file),

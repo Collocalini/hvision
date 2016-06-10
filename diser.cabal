@@ -18,6 +18,6 @@ executable diser
     other-modules: Data_iterators Processors ImageManipulation
                    Image_loading AdHoc Global Processors_common Processors2d
                    Recognize_demanded_processors Video Cmd_arguments What_i_have
-                   ShakingAbacus
+                   ShakingAbacus ShakingAbacusCommon
     ghc-options: -Wall -fwarn-tabs
 

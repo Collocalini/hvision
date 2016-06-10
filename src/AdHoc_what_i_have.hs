@@ -7,7 +7,7 @@ module AdHoc (
 {--
 Finally implementing all those drawings i made
 --}
-{--
+
 import qualified Data.Array.Repa as R
 --import qualified Data.Graph as G
 
@@ -17,7 +17,12 @@ data MainContext = MainContext {
    --memory :: Array D (Z :. Integer) Rational
   --,memory_cache :: Array U (Z :. Integer) Rational
   --,index_cache  :: Array U (Z :. Integer) Integer
-   longestMemory :: [Rational]
+   memory :: [R.Array R.U (R.Z :. Integer) Rational]
+      {-size of each new repa array should be increased exponentially (each 2 times
+        bigger then the previous)-}
+
+
+
 
 
    }
@@ -25,11 +30,11 @@ data MainContext = MainContext {
 
 
 
-reachBefore :: Integer -> MainContext Rational
+mainLoop :: Integer -> MainContext Rational
 
 
 
---}
+
 {--
 end of drawings
 --}

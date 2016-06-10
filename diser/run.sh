@@ -287,7 +287,14 @@ xxx
         #|gnuplot -persist \
         #|ffmpeg -f mjpeg -i pipe: -f avi -vcodec copy -s 1280x511 pipe: \
         #mplayer -profile prof3 -
+
+
+
+
 xxx
+
+
+
 
 #--range-of-files 1..1000 \
 #

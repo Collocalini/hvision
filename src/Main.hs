@@ -23,6 +23,7 @@ import System.IO
 import System.Environment
 import Data.List
 import Data.Dynamic
+import Data.Maybe
 import qualified Data.Map as DMap
 import Text.ParserCombinators.Parsec
 --import Text.ParserCombinators.Parsec.Char
@@ -44,6 +45,7 @@ import Recognize_demanded_processors
 import Data_iterators
 import qualified Video as Vd
 import qualified What_i_have as Wih
+--import qualified ShakingAbacusCommon as Sabc
 import qualified ShakingAbacus as Sab
 ---end of imports from this project
 
@@ -304,6 +306,7 @@ data_processMultipage_matrix_output tag_DMap range processors adaptTo prepare_in
 routine:: [String] -> IO ()
 routine args
   |is_for_test = justtest
+  |is_for_shakingAbacusTest = shakingAbacusTest1
   |is_for_bypass = data_bypass tag_DMap' range
   |from_image_to_data_file = do_from_image_to_data_file
   |there_is_processing = do_processing
@@ -314,15 +317,20 @@ routine args
        |
        V  --}
      where
-     justtest =sab
+     justtest = --sab
                --  wih
-               --do  putStrLn "test"
+               do  putStrLn "test"
 
 
 
      is_for_test :: Bool
      is_for_test
         |"true" == (DMap.findWithDefault "Not found" CmdA.argument_test $ tag_DMap') = True
+        |otherwise = False
+
+     is_for_shakingAbacusTest :: Bool
+     is_for_shakingAbacusTest
+        |"true" == (DMap.findWithDefault "Not found" CmdA.argument_shakingAbacusTest $ tag_DMap') = True
         |otherwise = False
 
 
@@ -550,32 +558,31 @@ routine args
 
 
       --shaiking abakus test
-     sab = do
-      gnuplot<-readFile "abacus.gpi"
-      putStrLn gnuplot
-      putStrLn $ unlines $ map unlines
-         $ perPermutationSet
-         $ map (\(x,y,z)-> (show x) ++ " " ++ (show y) ++ " " ++ [z] ++ " ") $ zip3 xs ys
-         $ concat $ concat $ intersperse (replicate singlePermutationSetLength "2")
-         $ map singlePermutationSet
-         $ map (\(l,r)-> l ++ "1" ++ r) $ zip (map (\x-> replicate x     '0') [0..inputLength-1])
-                                              (map (\x-> replicate (inputLength-1-x) '0') [0..inputLength-1])
-      putStrLn "EOD"
+     shakingAbacusTest = do --Sab.test1
+           --Sab.in4_v_3_v_2
+           d <- readFile dfile
+           mapM_ (\_in-> Sab.inN_v_v_v_2 (map read $ words _in) (fromMaybe "" gfile)) $ lines d
+           return ()
       where
-      inputLength = 20
-      selectionLength = 8
-      singlePermutationSet = Sab.permuteAbac selectionLength
-      singlePermutationSetLength = length $ singlePermutationSet [1..inputLength]
-      xs = concatMap (replicate singlePermutationSetLength) [1..]
-           --(map (\(l,r)-> r+l) $ zip (cycle [0..selectionLength-1])
-           -- $ concatMap (replicate (singlePermutationSetLength*selectionLength)) [1,1+selectionLength..])
-      ys = cycle [1..singlePermutationSetLength]
-           --(cycle $ concatMap (replicate selectionLength) [1..singlePermutationSetLength])
-      perPermutationSet [] = []
-      perPermutationSet x = (\(l,r)-> l:(perPermutationSet r))
-                                  --  $ splitAt (singlePermutationSetLength*selectionLength) x
-                                    $ splitAt singlePermutationSetLength x
+        dfile = (\(CmdA.InputArguments {CmdA.data_file = (Just d)}) -> d) inputArgs'
+        gfile = (\(CmdA.InputArguments {CmdA.gnuplot_file = g}) -> g) inputArgs'
 
+
+
+
+
+
+     shakingAbacusTest1 = do
+           d <- readFile dfile
+           mapM_ (\_in-> Sab.inN_v_Xrecursive (map read $ words _in)
+                                              (fromMaybe "" gfile)
+                                               1
+                                               2
+                 ) $ lines d
+           return ()
+      where
+        dfile = (\(CmdA.InputArguments {CmdA.data_file = (Just d)}) -> d) inputArgs'
+        gfile = (\(CmdA.InputArguments {CmdA.gnuplot_file = g}) -> g) inputArgs'
 
 -----end of peculier section
 
