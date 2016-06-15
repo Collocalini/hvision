@@ -22,25 +22,50 @@ type Graph = Maybe (R.Array R.U (R.Z :. Integer) GraphCell)
 type Memory = R.Array R.D (R.Z :. Integer) Cell
    {-delayed internal representation-}
 
-type MemoryInternal = Seq.Seq (R.Array R.U (R.Z :. Integer) Cell)
+data MemoryInternal = MemoryInternal
+   {
+    memory :: Seq.Seq Cell --Seq.Seq (R.Array R.U (R.Z :. Integer) Cell)
    {-size of each new repa array should be increased exponentially (each 2 times
         bigger then the previous). Initial size is 2. [2, 4, 8, 16 ..]-}
+
+   ,missedHits :: Seq.Seq CellAdress
+   ,hopsTillFree :: Seq.Seq (Seq.Seq CellAdress)
+   ,head :: CellAdress
+   }
+
+
+
+data CellAdress = CellAdress
+   {
+    dli :: Integer --delayed linear index
+  -- ,ii1 :: Integer --index in seq, aka level 1
+  -- ,ii2 :: Integer --index in repa, aka level 2
+   }
 
 
 data Cell = Cell {
     value :: Maybe Rational
- --  ,
+   ,neighbors :: Seq.Seq CellAdress
+   ,abstractNeighbors :: Seq.Seq CellAdress
+   ,dreamNeighbors :: Seq.Seq CellAdress
+   ,maybeVacant :: Seq.Seq CellAdress
+   ,meInRecentWalks :: Seq.Seq CellAdress
    }
 
 
 emptyCell = Cell {
-   value = Nothing
+    value             = Nothing
+   ,neighbors         = Seq.empty
+   ,abstractNeighbors = Seq.empty
+   ,dreamNeighbors    = Seq.empty
+   ,maybeVacant       = Seq.empty
+   ,meInRecentWalks   = Seq.empty
    }
 
 
 
 
-data GraphCell = Cell {
+data GraphCell = GraphCell {
     value :: Maybe Rational
    ,neighbors :: Maybe (R.Array R.D (R.Z :. Integer) Integer)
    }
@@ -50,11 +75,11 @@ data GraphCell = Cell {
 
 data MainContext = MainContext {
 
-    memory :: Memory
+    memory :: MemoryInternal
 
 
-   --,input  :: Graph
-   ---,output :: Graph
+   ,input  :: Maybe Graph
+   ,output :: Maybe Graph
 
 
 
@@ -76,9 +101,9 @@ sense :: Source (StateT MainContext IO) Graph
 
 {--Manage memory issues.
    Sorting and caching for fast access is happening here
-   --}
-remember :: Conduit Graph (StateT MainContext IO) ()
-
+   --} --Conduit Graph (StateT MainContext IO) ()
+remember :: State MainContext ()
+--remember = do
 
 
 {--Extrapolate memories using predefined heuristics.
@@ -96,6 +121,28 @@ think :: Conduit () (StateT MainContext IO) ()
 
 
 
+compose :: State MainContext ()
+
+
+
+
+decompose :: State MainContext ()
+
+
+
+hypothesis :: State MainContext ()
+
+
+
+
+trainOfThought :: State MainContext ()
+
+
+
+
+
+
+
 {--Use memories to form an answer.
    An answer is a piece of memory consisting of a number of cells activated by sences.
    --}
@@ -103,7 +150,7 @@ say :: Sink () (StateT MainContext IO) Graph
 
 
 
-
+{-
 
 memIndex
    :: Integer --index(in delayed repa)
@@ -120,12 +167,11 @@ memIndex i {-l-} = (iInSeq-1, iInRePA-1)
 
 
 
-
 readMemory
    :: Integer --index(in delayed repa)
  --  -> MemoryInternal
    -> State MemoryInternal Cell
-readMemory i m = whenValid (validIndex i m)
+readMemory i = do return $ whenValid $ validIndex i
    where
 
    whenValid (Just (_,_,_,c)) = c
@@ -137,15 +183,36 @@ readMemory i m = whenValid (validIndex i m)
 
 
 
+
+
 validIndex
    :: Integer --index(in delayed repa)
   -- -> MemoryInternal
-   -> State MemoryInternal (
-      Maybe (  Integer          --index(in delayed repa) the same as the input, unchanged
+   -> State MemoryInternal
+        (
+         Maybe (  Integer          --index(in delayed repa) the same as the input, unchanged
+                , Integer, Integer --index in seq, index in repa
+                , Cell)            --and the value while we are at it
+        )
+validIndex i = do
+   m <- get
+   return $ validIndex_plain i m
+
+
+
+
+
+
+
+
+validIndex_plain
+   :: Integer --index(in delayed repa)
+   -> MemoryInternal
+   -> Maybe (  Integer          --index(in delayed repa) the same as the input, unchanged
              , Integer, Integer --index in seq, index in repa
              , Cell)            --and the value while we are at it
-        )
-validIndex i m
+
+validIndex_plain i m
    |is < (length m) = when_is_Fits $ Seq.index m is
    |otherwise       = Nothing
    where
@@ -159,6 +226,15 @@ validIndex i m
 
 
 
+
+
+writeToMemory
+   :: Cell
+   -> State MemoryInternal ()
+writeToMemory c = do
+
+
+-}
 
 
 
@@ -176,7 +252,7 @@ mainLoopIO = do
 -}
 
 mainLoop :: StateT MainContext IO Graph
-mainLoop mc = sense $= remember =$= dream =$= think =$ say
+mainLoop mc = --sense $= remember =$= dream =$= think =$ say
 
 
 
