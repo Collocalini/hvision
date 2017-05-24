@@ -86,6 +86,14 @@ data MainContext = MainContext {
    }
 
 
+data MCStep = MCStep {
+   cell :: Cell
+
+   }
+
+
+
+
 
 --Sink Graph (State MainContext IO) ()
 
@@ -232,9 +240,35 @@ writeToMemory
    :: Cell
    -> State MemoryInternal ()
 writeToMemory c = do
-
-
 -}
+
+
+
+
+
+{-
+markov chain-like step
+-}
+
+mcStep
+   :: State MCStep ()
+mcStep = do
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
