@@ -22,16 +22,23 @@ import System.IO
 
 import System.Environment
 import Data.List
+import qualified Data.Sequence as S
 import Data.Dynamic
 import Data.Maybe
+import Data.Word
 import qualified Data.Map as DMap
 import Text.ParserCombinators.Parsec
 --import Text.ParserCombinators.Parsec.Char
 --import System.Process
 import Control.Monad
+import Control.Monad.RWS.Lazy
+import Control.Monad.Except
 import Pipes
+import Data.Conduit hiding (Consumer, await, yield)
+import qualified Data.Conduit as C
 import qualified Pipes.Prelude as P
 import qualified Data.Matrix as Dmatrix
+import qualified Algebra.Graph.AdjacencyMap as GA
 
 ---from this project
 import Processors
@@ -47,6 +54,7 @@ import qualified Video as Vd
 import qualified What_i_have as Wih
 --import qualified ShakingAbacusCommon as Sabc
 import qualified ShakingAbacus as Sab
+import qualified Type_22052017_classifier as T2
 ---end of imports from this project
 
 
@@ -307,6 +315,7 @@ routine:: [String] -> IO ()
 routine args
   |is_for_test = justtest
   |is_for_shakingAbacusTest = shakingAbacusTest1
+  |is_for_type_22052016_classifier_test = type_22052016_classifier_test
   |is_for_bypass = data_bypass tag_DMap' range
   |from_image_to_data_file = do_from_image_to_data_file
   |there_is_processing = do_processing
@@ -333,6 +342,11 @@ routine args
         |"true" == (DMap.findWithDefault "Not found" CmdA.argument_shakingAbacusTest $ tag_DMap') = True
         |otherwise = False
 
+     is_for_type_22052016_classifier_test :: Bool
+     is_for_type_22052016_classifier_test
+        |"true" == (DMap.findWithDefault "Not found" CmdA.argument_type_22052016_classifier_test 
+                                                     $ tag_DMap') = True
+        |otherwise = False
 
      is_multipage :: Bool
      is_multipage
@@ -584,6 +598,32 @@ routine args
         dfile = (\(CmdA.InputArguments {CmdA.data_file = (Just d)}) -> d) inputArgs'
         gfile = (\(CmdA.InputArguments {CmdA.gnuplot_file = g}) -> g) inputArgs'
 
+
+     type_22052016_classifier_test = do
+           {-d <- readFile dfile
+           mapM_ (\_in-> Sab.inN_v_Xrecursive (map read $ words _in)
+                                              (fromMaybe "" gfile)
+                                               1
+                                               2
+                 ) $ lines d
+           let rc :: T2.A [Word8]
+               rc = (T2.readFile_tc dfile) .| T2.step $$ T2.sink
+           -}
+           o <- evalRWST (runExceptT $ (T2.readFile_tc dfile) .| T2.step $$ T2.sink) 
+                        (T2.B { T2._calls  = 10
+                              ,T2._memory = 10
+                             })
+                        (T2.C { T2._graph         = GA.empty
+                              ,T2._entrancesLow  = S.empty
+                              ,T2._entrancesHigh = S.empty
+                              ,T2._budget = T2.B { T2._calls  = 10
+                                                  ,T2._memory = 10
+                                                 }
+                            })
+           print o
+      where
+        dfile = (\(CmdA.InputArguments {CmdA.data_file = (Just d)}) -> d) inputArgs'
+        gfile = (\(CmdA.InputArguments {CmdA.gnuplot_file = g}) -> g) inputArgs'
 -----end of peculier section
 
 
