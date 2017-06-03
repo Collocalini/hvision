@@ -344,7 +344,7 @@ routine args
 
      is_for_type_22052016_classifier_test :: Bool
      is_for_type_22052016_classifier_test
-        |"true" == (DMap.findWithDefault "Not found" CmdA.argument_type_22052016_classifier_test 
+        |"true" == (DMap.findWithDefault "Not found" CmdA.argument_type_22052016_classifier_test
                                                      $ tag_DMap') = True
         |otherwise = False
 
@@ -600,27 +600,28 @@ routine args
 
 
      type_22052016_classifier_test = do
-           {-d <- readFile dfile
-           mapM_ (\_in-> Sab.inN_v_Xrecursive (map read $ words _in)
-                                              (fromMaybe "" gfile)
-                                               1
-                                               2
-                 ) $ lines d
-           let rc :: T2.A [Word8]
-               rc = (T2.readFile_tc dfile) .| T2.step $$ T2.sink
-           -}
-           o <- evalRWST (runExceptT $ (T2.readFile_tc dfile) .| T2.step $$ T2.sink) 
-                        (T2.B { T2._calls  = 10
-                              ,T2._memory = 10
-                             })
-                        (T2.C { T2._graph         = GA.empty
-                              ,T2._entrancesLow  = S.empty
-                              ,T2._entrancesHigh = S.empty
-                              ,T2._budget = T2.B { T2._calls  = 10
-                                                  ,T2._memory = 10
-                                                 }
-                            })
-           print o
+         d <- readFile dfile
+        {-mapM_ (\_in-> Sab.inN_v_Xrecursive (map read $ words _in)
+                                           (fromMaybe "" gfile)
+                                            1
+                                            2
+              ) $ lines d
+        let rc :: T2.A [Word8]
+            rc = (T2.readFile_tc dfile) .| T2.step $$ T2.sink
+        -}
+         print $ evalRWST (runExceptT $ (T2.readFile_tc d) .| T2.step $$ T2.sink)
+            (T2.B { T2._calls  = 10
+                  ,T2._memory = 10
+                 })
+            (T2.C {T2._graph         = GA.empty
+                  ,T2._entrancesLow  = S.empty
+                  ,T2._entrancesHigh = S.empty
+                  ,T2._budget = T2.B { T2._calls  = 10
+                                      ,T2._memory = 10
+                                     }
+                  ,T2._tick = T2.Tick 0
+                })
+           --print o
       where
         dfile = (\(CmdA.InputArguments {CmdA.data_file = (Just d)}) -> d) inputArgs'
         gfile = (\(CmdA.InputArguments {CmdA.gnuplot_file = g}) -> g) inputArgs'
