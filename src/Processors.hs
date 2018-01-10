@@ -57,7 +57,7 @@ import GHC.Float
 import ImageManipulation
 import Global
 import Control.DeepSeq
-import Numeric.FFT
+--import Numeric.FFT
 import Processors_common
 import qualified Data.Matrix as DMatrix
 --
@@ -993,13 +993,15 @@ histogram_ad_hock_f_dyn  row =
 
 
 {-- ================================================================================================
+FFT processing REMOVED!!!!
+Redo with dofferent FFT provider (other then pure-fft)
 ================================================================================================ --}
 fft_of_column_of_hist:: [(Float, Float)] -> [(Float, Float)]
 fft_of_column_of_hist input = ---zip l [maximum $ map (double2Float.realPart) $ dft $
                               --                                  map (\i -> float2Double i :+ 0) r]
                               zip [0..] $ map (double2Float.phase) $
                                 --filter (\x -> ((magnitude x) < 20)&&((magnitude x) > -20)) $
-                                                                   dft $
+                                                                  -- dft $
                                                                    map (\i -> float2Double i :+ 0) r
    where
    (l,r) = unzip input
@@ -1115,23 +1117,3 @@ to_same_length row = map add_preffix_and_suffix $ zip3 row' mins maxs
 
 
 -------------------------------- end of section of processors --------------------------------------
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

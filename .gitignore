@@ -1,0 +1,8 @@
+dist/
+.cabal-sandbox/
+cabal.sandbox.config
+.stack-work
+stack.yaml
+diser
+ffmpeg
+ffmpeg-light

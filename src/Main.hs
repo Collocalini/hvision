@@ -315,7 +315,7 @@ routine:: [String] -> IO ()
 routine args
   |is_for_test = justtest
   |is_for_shakingAbacusTest = shakingAbacusTest1
-  |is_for_type_22052016_classifier_test = type_22052016_classifier_test
+  |is_for_type_22052017_classifier_test = type_22052017_classifier_test
   |is_for_bypass = data_bypass tag_DMap' range
   |from_image_to_data_file = do_from_image_to_data_file
   |there_is_processing = do_processing
@@ -342,9 +342,9 @@ routine args
         |"true" == (DMap.findWithDefault "Not found" CmdA.argument_shakingAbacusTest $ tag_DMap') = True
         |otherwise = False
 
-     is_for_type_22052016_classifier_test :: Bool
-     is_for_type_22052016_classifier_test
-        |"true" == (DMap.findWithDefault "Not found" CmdA.argument_type_22052016_classifier_test
+     is_for_type_22052017_classifier_test :: Bool
+     is_for_type_22052017_classifier_test
+        |"true" == (DMap.findWithDefault "Not found" CmdA.argument_type_22052017_classifier_test
                                                      $ tag_DMap') = True
         |otherwise = False
 
@@ -599,7 +599,7 @@ routine args
         gfile = (\(CmdA.InputArguments {CmdA.gnuplot_file = g}) -> g) inputArgs'
 
 
-     type_22052016_classifier_test = do
+     type_22052017_classifier_test = do
          d <- readFile dfile
         {-mapM_ (\_in-> Sab.inN_v_Xrecursive (map read $ words _in)
                                            (fromMaybe "" gfile)

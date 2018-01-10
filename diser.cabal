@@ -21,7 +21,7 @@ executable diser
                  , mtl -any
                  , parsec -any
                  , pipes -any
-                 , pure-fft -any
+                -- , pure-fft -any
                  , algebraic-graphs -any
                  , lens -any
     main-is: Main.hs

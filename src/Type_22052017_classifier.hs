@@ -274,7 +274,7 @@ getByLabel_common labelNs v = do
    c<-get
    return $ labelV v $ c^.graph
    where
-      labelV  v g = S.filter (hasLabel v) $ postset v g
+      labelV  v g = S.filter (hasLabel v) $ postSet v g
          where
          hasLabel  v x = member (x^.vnumber) $ keepNnumbersOnly $ labelNs
 
