@@ -6,7 +6,11 @@
 module Type_22052017_classifier (
  step
 ,sink
+,sink''
+,output
+,naiveResult
 ,readFile_tc
+,graphvisCompatible
 ,Vertex(..)
 ,Input(..)
 ,A
@@ -22,6 +26,8 @@ import Data.Set hiding (map,filter,empty,fromList,null,foldl)
 import qualified Data.Set as S
 import Algebra.Graph.AdjacencyMap hiding (empty,graph)
 import qualified Algebra.Graph.AdjacencyMap as Ag
+import Algebra.Graph.Export.Dot -- hiding ()
+--import qualified Algebra.Graph.Export.Dot as Agxd
 import Control.Lens hiding ((.=),Context,(|>))
 import qualified Control.Lens as L --hiding (element)
 import Data.DList hiding (map,empty,fromList,head,concat,lookup)
@@ -151,11 +157,23 @@ readFile_tc n = do
                     }
 
 
+
+output :: String -> (Word8, String) -> IO ()
+output f (o, g) = do
+   putStrLn $ show o
+   writeFile (f ++ ".dot") g
+
+naiveResult (Identity ((Right x), log)) = (x,log)
+
+
 sink' :: Sink Word8 A [Word8]
 sink' = consume
 
 sink :: Sink (Word8, Context) A [(Word8, Context)]
 sink = consume
+
+sink'' :: Sink (Word8, String) A [(Word8, String)]
+sink'' = consume
 
 step :: Conduit Input A (Word8, Context)
 step = do
@@ -446,6 +464,25 @@ spc_basic i = do
          return $ nbpv'^.value
 
 
+
+
+graphvisCompatible :: Conduit (Word8, Context) A (Word8, String)
+graphvisCompatible = do
+   ar <- await
+   case ar of
+      Nothing -> return ()
+      Just (w,c) -> do
+
+         yield $ (w, exportAsIs $ gmap vertexToLable $ c^.graph)
+
+         graphvisCompatible
+
+
+
+vertexToLable :: Vertex -> String
+vertexToLable v = "#" ++ (show $ v^.vnumber)
+                  ++ ", " ++ (show $ v^.value)
+                  ++ " m=" ++ (show $ v^.metric)
 
 
 
