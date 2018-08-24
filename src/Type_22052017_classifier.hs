@@ -473,7 +473,7 @@ graphvisCompatible = do
       Nothing -> return ()
       Just (w,c) -> do
 
-         yield $ (w, exportAsIs $ gmap vertexToLable $ c^.graph)
+         yield $ (w, export style $ c^.graph)
 
          graphvisCompatible
 
@@ -485,6 +485,15 @@ vertexToLable v = "#" ++ (show $ v^.vnumber)
                   ++ " m=" ++ (show $ v^.metric)
 
 
+
+edgeStyle :: Vertex -> Vertex -> [Attribute String]
+edgeStyle a b = ["color" := "blue"   | odd ( a^.vnumber + b^.vnumber)]
+
+
+
+
+style = set edgeAttributes edgeStyle
+  $ set vertexName vertexToLable defaultStyle
 
 
 
