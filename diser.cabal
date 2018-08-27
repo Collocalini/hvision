@@ -24,6 +24,7 @@ executable diser
                 -- , pure-fft -any
                  , algebraic-graphs -any
                  , lens -any
+                -- , data-lens-template ==2.2
     main-is: Main.hs
     buildable: True
     extensions: CPP
@@ -33,4 +34,3 @@ executable diser
                    Recognize_demanded_processors Video Cmd_arguments What_i_have
                    ShakingAbacus ShakingAbacusCommon Type_22052017_classifier
     ghc-options: -Wall -fwarn-tabs
-

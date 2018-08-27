@@ -20,9 +20,9 @@ module Type_22052017_classifier (
 ) where
 
 
-import Data.Sequence hiding (length,empty,fromList,null,zip,filter,lookup)
+import Data.Sequence hiding (drop,map,intersperse,length,empty,fromList,null,zip,filter,lookup)
 import qualified Data.Sequence as Sq
-import Data.Set hiding (map,filter,empty,fromList,null,foldl)
+import Data.Set hiding (drop,insert,map,filter,empty,fromList,null,foldl)
 import qualified Data.Set as S
 import Algebra.Graph.AdjacencyMap hiding (empty,graph)
 import qualified Algebra.Graph.AdjacencyMap as Ag
@@ -30,16 +30,17 @@ import Algebra.Graph.Export.Dot -- hiding ()
 --import qualified Algebra.Graph.Export.Dot as Agxd
 import Control.Lens hiding ((.=),Context,(|>))
 import qualified Control.Lens as L --hiding (element)
-import Data.DList hiding (map,empty,fromList,head,concat,lookup)
+import Data.DList hiding (tail,map,empty,fromList,head,concat,lookup)
 import qualified Data.DList as DL
+import Data.List
 import Data.Maybe
 import Data.Word
 import Control.Monad.RWS.Lazy
 import Control.Monad.Except
 import Data.Conduit
-import Data.Conduit.List hiding (map,mapM,head,concatMap,concat,filter,lookup)
+import Data.Conduit.List hiding (drop,map,mapM,head,concatMap,concat,filter,lookup)
 import qualified Data.Conduit.List as Cl
-
+--import Data.Lens.Template
 
 
 
@@ -215,14 +216,14 @@ addNeighbour :: Vertex -> [VertexLabel] -> Vertex -> Vertex
 addNeighbour v l n =
    set
       neighbours
-      (insert (vertexToNeighbour n l) $ v^.neighbours)
+      (S.insert (vertexToNeighbour n l) $ v^.neighbours)
       v
 
 addNeighbourN :: Vertex -> Neighbour -> Vertex
 addNeighbourN v n =
    set
       neighbours
-      (insert n $ v^.neighbours)
+      (S.insert n $ v^.neighbours)
       v
 
 addNeighbours :: Vertex        --add neighbours to this vertex
@@ -487,13 +488,56 @@ vertexToLable v = "#" ++ (show $ v^.vnumber)
 
 
 edgeStyle :: Vertex -> Vertex -> [Attribute String]
-edgeStyle a b = ["color" := "blue"   | odd ( a^.vnumber + b^.vnumber)]
+edgeStyle a b = --["color" := "blue"   | odd ( a^.vnumber + b^.vnumber)]
+  [colorStyle, edgeStyle]
+  where
+    prediction = caseEdgeLabel [Prediction]
+    input      = caseEdgeLabel [Input]
+    same       = caseEdgeLabel [Same]
+    backward   = caseEdgeLabel [Backward]
+    forward    = caseEdgeLabel [Forward]
+    cPositive  = caseEdgeLabel [CPositive]
+    cNegative  = caseEdgeLabel [CNegative]
+
+    edgeAB n = n^.nnumber == b^.vnumber
+    caseEdgeLabel l = or $ S.map (\n-> isSubsetOf (S.fromList l) $ n^.labels)
+                                  $ S.filter edgeAB $ a^.neighbours
+
+
+    attrComb = [
+       (prediction , "blue")
+      ,(input      , "brown")
+      ,(same       , "grey")
+      ,(backward   , "red")
+      ,(forward    , "green")
+      ,(cPositive  , "magenta")
+      ,(cNegative  , "teal")
+      ]
+
+    colorStyle
+      |hasLabel= "color" := (concat $ intersperse (";" ++ (show lengthPerLabel) ++ ":")
+                                                 $ map snd
+                                                 $ detectedLabels
+                            )
+      |otherwise = "color" := ""
+
+    edgeStyle
+      |hasLabel= "style" := "bold"
+      |otherwise = "style" := "dotted"
+
+    hasLabel = not $ null $ detectedLabels
+    detectedLabels = filter fst attrComb
+    lengthPerLabel = 1/(fromIntegral $ length detectedLabels)
 
 
 
 
-style = set edgeAttributes edgeStyle
-  $ set vertexName vertexToLable defaultStyle
+setStyleEdgeAttributes x s = (\s -> s {edgeAttributes=x}) s
+setStyleVertexName     x s = (\s -> s {vertexName=x})     s
+
+
+style = setStyleEdgeAttributes edgeStyle
+  $ defaultStyle vertexToLable
 
 
 
