@@ -22,7 +22,7 @@ module Type_22052017_classifier (
 
 import Data.Sequence hiding (drop,map,intersperse,length,empty,fromList,null,zip,filter,lookup)
 import qualified Data.Sequence as Sq
-import Data.Set hiding (drop,insert,map,filter,empty,fromList,null,foldl)
+import Data.Set hiding (drop,insert,map,filter,empty,fromList,null,foldl,foldl')
 import qualified Data.Set as S
 import Algebra.Graph.AdjacencyMap hiding (empty,graph)
 import qualified Algebra.Graph.AdjacencyMap as Ag
@@ -37,8 +37,9 @@ import Data.Maybe
 import Data.Word
 import Control.Monad.RWS.Lazy
 import Control.Monad.Except
+import Control.Monad.Extra
 import Data.Conduit
-import Data.Conduit.List hiding (drop,map,mapM,head,concatMap,concat,filter,lookup)
+import Data.Conduit.List hiding (drop,map,mapM,head,concatMap,concat,filter,lookup,concatMapM)
 import qualified Data.Conduit.List as Cl
 --import Data.Lens.Template
 
@@ -109,6 +110,7 @@ data Context =
      -- ,_maxCells      :: Word
       ,_budget :: BudgetForActions
       ,_tick   :: Tick
+      ,_verbosity ::[String]
      }deriving (Show)
 L.makeLenses ''Context
 
@@ -138,7 +140,12 @@ type A' m = ExceptT ApplicationLog (RWST BudgetForActions (DList ApplicationLog)
 type A = A' Identity
 
 
-
+verboseTell :: String -> String -> A ()
+verboseTell v s = do
+  c<-get
+  case (elem v $ c^.verbosity)of
+    False -> return ()
+    True  -> tell $ DL.singleton $ Note s
 
 
 
@@ -293,7 +300,7 @@ getByLabel_common labelNs v = do
    c<-get
    return $ labelV v $ c^.graph
    where
-      labelV  v g = S.filter (hasLabel v) $ postSet v g
+      labelV  v g = S.filter (hasLabel v) $ vertexSet g -- $ postSet v g
          where
          hasLabel  v x = member (x^.vnumber) $ keepNnumbersOnly $ labelNs
 
@@ -339,13 +346,18 @@ correctionToPrediction :: Vertex --input
                        -> A (Vertex, VertexLabel) --Correction
 correctionToPrediction i p = do
    nct <- getTick
-   let nc = set value (abs err) $ set vnumber nct vertexEmpty
+   let nc = set value absErr $ set vnumber nct vertexEmpty
    case (err<0) of
       False -> return (nc, CPositive)
       True  -> return (nc, CNegative)
 
    where
-      err = i^.value - p^.value
+      err :: Int 
+      err = iv - pv
+      absErr = fromIntegral $ abs err
+      
+      iv  = fromIntegral $ i^.value
+      pv  = fromIntegral $ p^.value
 
 
 
@@ -364,6 +376,9 @@ getPredictions v = getByLabel [Prediction] v
 getPreviousPredictions :: Vertex -> A (Set Vertex)
 getPreviousPredictions v = getByExactLabelOpen [Prediction,Backward] v
 
+getSamePrevious :: Vertex -> A (Set Vertex)
+getSamePrevious v = getByExactLabelOpen [Same,Backward] v
+
 getCorrections :: Vertex -> A (Set Vertex)
 getCorrections v = getByLabel [CPositive,CNegative] v
 
@@ -381,10 +396,24 @@ spc_basic i = do
    c<-get
    ni <- getTick
    np <- getTick
-   let niv  = set value i $ set vnumber ni vertexEmpty --new input vertex
-   let nbpv = set value i $ set vnumber np vertexEmpty --basic prediction
+   let niv  = setVertexValueAndVNumber i ni vertexEmpty --new input vertex
+   let nbpv = setVertexValueAndVNumber i np vertexEmpty --basic prediction
    le <- lastLowEntrance
+   spc_arbitraryLE niv nbpv le i
+   
+   where
+      setVertexValueAndVNumber i ni v = set value i $ set vnumber ni v
 
+{-- =================================================
+Save Predict Correct - arbitrary last low entrance version
+--}
+spc_arbitraryLE   :: Vertex 
+                  -> Vertex 
+                  -> Maybe Vertex 
+                  -> Word8 
+                  -> A Word8
+spc_arbitraryLE niv nbpv le i = do
+   c<-get
    case le of
       Nothing -> do  --first value entered. The beginning entry.
          let niv'  = addNeighbour niv [Prediction] nbpv
@@ -397,75 +426,131 @@ spc_basic i = do
          return $ nbpv'^.value
 
       Just v  -> do --not first entry. General computation.
+         verboseTell "spc_basic" ("spc_basic")
+         
+         pps<- previousPredictionS v
+         ctps <- newCorrections niv pps
 
-         pps<- (return.elems) =<< getPredictions v
-         pcs <- mapM (\x->do
-            x'<-getPreviousPredictions x
-            y <-mapM (\x-> do
-                        x' <- getCorrections x
-                        return $ elems x'
-                        ) $ elems x'
-            return $ concat y
-            ) pps
+         let niv'  = niv_AddNeighbours niv nbpv v
+         let nbpv' = nbpv_adjustPrediction v ctps $ nbpv_AddNeighbours nbpv niv pps
+         let v'    = addNeighbour v [Same,Forward] niv
+         let pps'  = pps_AddNeighbours ctps pps nbpv'
+         
 
+         verboseTell "spc_basic" ("pps'=" ++ (show pps'))
+         verboseTell "spc_basic" ("ctps=" ++ (show ctps))
+         
+         updateVertexes (c^.graph) $ zip pps pps'
+         c<-get
+         updateVertexes (c^.graph)  [(v, v')]
+           
+         c<-get
+         assign graph
+            $ overlay (c^.graph) (fromAdjacencyList $ concat
+               [
+                  [(niv' , [nbpv', v'])
+                  ,(nbpv', niv':pps')
+                  ,(v'   , [niv'])
+                  ]
 
-         ctps <- mapM (correctionToPrediction niv) pps
+                  ,(zip pps'
+                       $ pps_edgesTo_ctps_and_nbpv ctps nbpv'
+                   )
 
-         let addNeighbour_flipArgs  l n v = addNeighbour  v l n
-         let addNeighbours_flipArgs l n v = addNeighbours v l n
+               ])
+         
+         c<-get
 
-         let niv'  = addNeighbour_flipArgs [Same,Backward] v
-                        $ addNeighbour niv [Prediction] nbpv
+         pcs      <- previousCorrectionS pps'
+         let pcs'  = pcs_AddNeighbours ctps pcs
+         let cs    = cs_AddNeighbours ctps pcs'
 
+         verboseTell "spc_basic" ("pcs=" ++ (show pcs))
+         verboseTell "spc_basic" ("pcs'=" ++ (show pcs'))
+         verboseTell "spc_basic" ("cs=" ++ (show cs))
 
+         updateVertexes (c^.graph) $ zip pcs pcs'
+         c<-get
+         updateVertexes (c^.graph) $ zip (map fst ctps) cs
 
-         let nbpv' = (\x-> maybe x (adjustPrediction x) $ closestByTickAfterVL v ctps
-                         )
-                         $ addNeighbours_flipArgs [Same,Backward] pps
-                         $ addNeighbour nbpv [Input] niv
-
-         let v' = addNeighbour v [Same,Forward] niv
-         let pps' = map (\(p, (c,l))->
-                           addNeighbour_flipArgs [l] c
-                              $ addNeighbour_flipArgs [Same,Forward] nbpv' p
-                        )
-                           $ zip pps ctps
-
-         let pcs' = concatMap (\(pc,c)->
-                                 zip
-                                     (map (addNeighbour_flipArgs [Same,Forward] (fst c)
-                                          ) pc
-                                     )
-                                     $ repeat $ fst c
-                              )
-                              $ zip pcs ctps
-
-         let cs' = map (\(c,pc)-> (addNeighbours (fst c) [Same,Backward] pc, pc)
-                       ) $ zip ctps pcs
+         c<-get
 
          assign graph
             $ overlay (c^.graph) (fromAdjacencyList $ concat
                [
-               [(niv' , [nbpv', v])
-               ,(nbpv', niv':pps)
-               ,(v'   , [niv'])
-               ]
-
-               ,(zip pps'
-                    $ map (\(l,r)-> [l,r])
-                        $ zip (map fst ctps)
-                              $ repeat nbpv'
-                )
-               ,(map (\(pc, c)->(pc, [c])) pcs'
-                )
-               ,cs'
+                   zip pcs' $ repeat $ map fst ctps
+                  ,zip cs   $ repeat pcs'
                ])
 
+         
+         c<-get
+         verboseTell "spc_basic" ("graph=" ++ (show $ c^.graph))
+         
          assign entrancesLow $ c^.entrancesLow |> niv'
          return $ nbpv'^.value
+   where
+    updateVertexes :: AdjacencyMap Vertex -> [(Vertex,Vertex)] -> A ()
+    updateVertexes oldGraph zip_Vold_Vnew = do 
+      assign graph $ 
+            foldl' (\g (l,r)-> replaceVertex l r g) oldGraph zip_Vold_Vnew
+    
+    
 
+    previousPredictionS v = (return.elems) =<< getPredictions v
+    
+    previousCorrectionS :: [Vertex] -> A [Vertex]
+    previousCorrectionS pps = concatMapM (pps2ppps2pcs) pps
+      where 
+         pps2ppps2pcs :: Vertex -> A [Vertex]
+         pps2ppps2pcs pps = do
+            ppps<- getSamePrevious pps
+            pcs <-mapM ppps2pcs $ elems ppps
+            --pcs <- mapM ppps2pcs [pps] 
+            return $ concat pcs
+            
+            where
+               ppps2pcs :: Vertex -> A [Vertex]
+               ppps2pcs ppps = do
+                  verboseTell "spc_basic" ("ppps2pcs ppps=" ++ (show ppps))
+                  pcs <- getCorrections ppps
+                  verboseTell "spc_basic" ("ppps2pcs pcs=" ++ (show pcs))
+                  return $ elems pcs
 
+    newCorrections niv pps = mapM (correctionToPrediction niv) pps
 
+    addNeighbour_flipArgs  l n v = addNeighbour  v l n
+    addNeighbours_flipArgs l n v = addNeighbours v l n
+
+    niv_AddNeighbours niv nbpv v = addNeighbour_flipArgs [Same,Backward] v
+                                              $ addNeighbour niv [Prediction] nbpv
+
+    nbpv_AddNeighbours nbpv niv pps = addNeighbours_flipArgs [Same,Backward] pps
+                                        $ addNeighbour nbpv [Input] niv
+
+    nbpv_adjustPrediction v ctps nbpv = maybe nbpv (adjustPrediction nbpv)
+                                              $ closestByTickAfterVL v ctps
+
+    pps_AddNeighbours ctps pps nbpv' =
+      map (\(p, (c,l))->
+                        addNeighbour_flipArgs [l] c
+                            $ addNeighbour_flipArgs [Same,Forward] nbpv' p
+          )
+             $ zip pps ctps
+
+    pcs_AddNeighbours ctps pcs =
+      concatMap (\pc->
+                     map (\c->addNeighbour_flipArgs [Same,Forward] c pc)
+                         $ map fst ctps
+                  )
+                  pcs
+
+    cs_AddNeighbours ctps pcs =
+      map (\(c,_)-> addNeighbours c [Same,Backward] pcs) ctps
+
+    vertexesFrom_ctps ctps = map fst ctps
+    
+    pps_edgesTo_ctps_and_nbpv ctps nbpv' = repeat $ nbpv':(vertexesFrom_ctps ctps)
+ 
 
 graphvisCompatible :: Conduit (Word8, Context) A (Word8, String)
 graphvisCompatible = do
@@ -511,7 +596,7 @@ edgeStyle a b = --["color" := "blue"   | odd ( a^.vnumber + b^.vnumber)]
       ,(backward   , "red")
       ,(forward    , "green")
       ,(cPositive  , "magenta")
-      ,(cNegative  , "teal")
+      ,(cNegative  , "indigo")
       ]
 
     colorStyle

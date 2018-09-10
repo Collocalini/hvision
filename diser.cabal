@@ -25,6 +25,7 @@ executable diser
                  , algebraic-graphs -any
                  , lens -any
                 -- , data-lens-template ==2.2
+                 , extra -any
     main-is: Main.hs
     buildable: True
     extensions: CPP

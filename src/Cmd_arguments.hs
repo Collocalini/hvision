@@ -91,6 +91,7 @@ data InputArguments = InputArguments {
      ,matrix_stacking :: Maybe Bool
      ,from_image_to_data_file :: Maybe FilePath
      ,coords :: Maybe ((Int, Int),(Int, Int))
+     ,verbosity :: [String]
      }
 
 
@@ -118,6 +119,7 @@ inputArgs tm = InputArguments {
   ,matrix_stacking = matrix_stacking'
   ,from_image_to_data_file = from_image_to_data_file'
   ,coords = coords'
+  ,verbosity = verbosity'
   }
   where
   data_file'
@@ -257,7 +259,12 @@ inputArgs tm = InputArguments {
     where
     s = (DMap.findWithDefault default_coords argument_coords tm)
 
-
+  verbosity'
+    |s/= default_verbosity = get_verbosity_tags s
+    |s== "" = []
+    |otherwise = []
+    where
+    s = (DMap.findWithDefault default_verbosity argument_verbosity tm)
 
 
 argument_data_file = "data-file"
@@ -277,6 +284,7 @@ argument_repeat_frames_of_output = "repeat-frames-of-output"
 argument_matrix_stacking = "matrix-stacking"
 argument_from_image_to_data_file = "from-image-to-data-file"
 argument_coords = "coords"
+argument_verbosity = "verbosity"
 
 
 default_data_file = ""
@@ -296,7 +304,7 @@ default_repeat_frames_of_output = "1"
 default_matrix_stacking = "false"
 default_from_image_to_data_file = "-"
 default_coords = "-"
-
+default_verbosity = ""
 
 
 
@@ -320,7 +328,8 @@ options =  [
             argument_data_from_stdin,
             argument_repeat_frames_of_output,
             argument_from_image_to_data_file,
-            argument_coords
+            argument_coords,
+            argument_verbosity
            ]
 
 {-- ================================================================================================
@@ -344,7 +353,9 @@ tag_DMap [] = DMap.fromList [
         (argument_repeat_frames_of_output, default_repeat_frames_of_output),
         (argument_matrix_stacking,         default_matrix_stacking),
         (argument_from_image_to_data_file, default_from_image_to_data_file),
-        (argument_coords,                  default_coords)
+        (argument_coords,                  default_coords),
+        (argument_verbosity,               default_verbosity)
+
    ]----]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]
 
 tag_DMap lst = DMap.union (DMap.fromList $ map (\(Just x) -> x) $ list_arguments lst) $
@@ -426,12 +437,17 @@ get_demanded_coords arg = (\x -> (head x, last x) ) $ map read_cords $ break_to_
         break_to_columns str (i:rest) = (\(s,sr) -> s : (break_to_columns (tail sr) rest) )
                                                                                     $ splitAt i str
 
-        commas2spaces :: Char -> Char
-        commas2spaces c
-           |c == ',' = ' '
-           |otherwise = c
-
         read_cords :: String -> (Int, Int)
         read_cords c = (\x -> (read $ head x, read $ last x) ) $ words $ map commas2spaces c
 
+
+commas2spaces :: Char -> Char
+commas2spaces c
+   |c == ',' = ' '
+   |otherwise = c
+
 ----------------------------------------------------------------------------------------------------
+
+
+
+get_verbosity_tags s = words $ map commas2spaces s

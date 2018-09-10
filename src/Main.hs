@@ -618,6 +618,7 @@ routine args
                                                                    ,T2._memory = 10
                                                                   }
                                                ,T2._tick = T2.Tick 0
+                                               ,T2._verbosity = verbosity
                                                })
 
          writeFile (dfile ++ ".log") $ unlines $ DL.toList $ DL.map show l
@@ -633,6 +634,7 @@ routine args
       where
         dfile = (\(CmdA.InputArguments {CmdA.data_file = (Just d)}) -> d) inputArgs'
         outputFileNamesPerStep = map (\x -> dfile ++ "." ++ (show x)) [1..]
+        verbosity = (\(CmdA.InputArguments {CmdA.verbosity = v}) -> v) inputArgs'
 
 
 -----end of peculier section
