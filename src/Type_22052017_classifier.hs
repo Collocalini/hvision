@@ -95,6 +95,15 @@ instance Ord Vertex where
 L.makeLenses ''Vertex
 
 
+data Return_of_spc_arbitraryLE = Return_of_spc_arbitraryLE {
+    _spc_arbitraryLE_output :: Word8
+   ,_spc_arbitraryLE_niv    :: Vertex
+   }
+L.makeLenses ''Return_of_spc_arbitraryLE
+
+
+
+
 data BudgetForActions =
    B { _calls :: Integer
       ,_memory :: Integer
@@ -191,7 +200,7 @@ step = do
     Just a -> do
 
       yieldM (do
-         r<-maybe (return 0) spc_basic $ a^.input
+         r<-maybe (return 0) spc_feed_correction $ a^.input
          c<-get
          return (r,c)
          )
@@ -388,6 +397,14 @@ attachPreviousPredictionsToNewInput :: Vertex   --New input
                                     ->
 -}
 
+
+
+
+defaultReturn_of_spc_arbitraryLE = Return_of_spc_arbitraryLE {
+    _spc_arbitraryLE_output = 0
+   ,_spc_arbitraryLE_niv    = vertexEmpty
+   }
+
 {-- =================================================
 Save Predict Correct - basic version
 --}
@@ -399,10 +416,76 @@ spc_basic i = do
    let niv  = setVertexValueAndVNumber i ni vertexEmpty --new input vertex
    let nbpv = setVertexValueAndVNumber i np vertexEmpty --basic prediction
    le <- lastLowEntrance
-   spc_arbitraryLE niv nbpv le i
+   
+   rospcale<- spc_arbitraryLE niv nbpv le i
+   
+   c<-get
+   assign entrancesLow $ c^.entrancesLow |> (rospcale^.spc_arbitraryLE_niv)
+   return $ rospcale^.spc_arbitraryLE_output
    
    where
       setVertexValueAndVNumber i ni v = set value i $ set vnumber ni v
+
+
+{-- =================================================
+Save Predict Correct - feed correction to spc_arbitraryLE
+--}
+spc_feed_correction :: Word8 -> A Word8
+spc_feed_correction i = do
+   c<-get
+   ni <- getTick
+   np <- getTick
+   let niv  = setVertexValueAndVNumber i ni vertexEmpty --new input vertex
+   let nbpv = setVertexValueAndVNumber i np vertexEmpty --basic prediction
+   le <- lastLowEntrance
+   
+   rospcale<- spc_arbitraryLE niv nbpv le i
+   
+   c<-get
+   assign entrancesLow $ c^.entrancesLow |> (rospcale^.spc_arbitraryLE_niv)
+   c<-get
+   
+   -- .................
+   
+   --pps<- le2pps le
+   pcs<- pps2pcs =<< le2pps le
+   
+   verboseTell "spc_feed_correction" ("spc_feed_correction pcs= " ++ (show pcs))
+   
+   ifSingle_PCS_then_spc_arbitraryLE pcs
+   -- .................
+   
+   return $ rospcale^.spc_arbitraryLE_output
+   
+   where
+      setVertexValueAndVNumber i ni v = set value i $ set vnumber ni v
+      
+      le2pps (Just le) = (return.elems) =<< getPredictions le
+      le2pps Nothing   = return []
+      
+      pps2pcs pps = previousCorrectionS pps
+      
+      previousCorrectionS :: [Vertex] -> A [Vertex]
+      previousCorrectionS pps = concatMapM (pps2pcs') pps
+         where 
+            pps2pcs' :: Vertex -> A [Vertex]
+            pps2pcs' pps = do
+               pcs <- getCorrections pps
+               return $ elems pcs
+               
+      
+      ifSingle_PCS_then_spc_arbitraryLE [niv] = do 
+         c<-get
+         np <- getTick
+         let nbpv = setVertexValueAndVNumber (niv^.value) np vertexEmpty
+         le <- (return.listToMaybe.elems) =<< getSamePrevious niv
+         rospcale<- spc_arbitraryLE niv nbpv le (niv^.value)
+         return $ Just $ rospcale
+         
+         
+      ifSingle_PCS_then_spc_arbitraryLE _ = return $ Nothing
+
+
 
 {-- =================================================
 Save Predict Correct - arbitrary last low entrance version
@@ -411,7 +494,7 @@ spc_arbitraryLE   :: Vertex
                   -> Vertex 
                   -> Maybe Vertex 
                   -> Word8 
-                  -> A Word8
+                  -> A Return_of_spc_arbitraryLE
 spc_arbitraryLE niv nbpv le i = do
    c<-get
    case le of
@@ -419,14 +502,20 @@ spc_arbitraryLE niv nbpv le i = do
          let niv'  = addNeighbour niv [Prediction] nbpv
          let nbpv' = addNeighbour nbpv [Input] niv
 
+         updateVertexes (c^.graph) [(niv,niv')]
+         c<-get
+
          assign graph
             $ overlay (c^.graph) (fromAdjacencyList [(niv' , [nbpv'])
                                           , (nbpv', [niv'])])
-         assign entrancesLow $ c^.entrancesLow |> niv'
-         return $ nbpv'^.value
+         --assign entrancesLow $ c^.entrancesLow |> niv'
+         --return $ nbpv'^.value
+         return 
+            $ set spc_arbitraryLE_niv niv' 
+            $ set spc_arbitraryLE_output (nbpv'^.value) defaultReturn_of_spc_arbitraryLE
 
       Just v  -> do --not first entry. General computation.
-         verboseTell "spc_basic" ("spc_basic")
+         verboseTell "spc" ("spc_arbitraryLE")
          
          pps<- previousPredictionS v
          ctps <- newCorrections niv pps
@@ -437,8 +526,11 @@ spc_arbitraryLE niv nbpv le i = do
          let pps'  = pps_AddNeighbours ctps pps nbpv'
          
 
-         verboseTell "spc_basic" ("pps'=" ++ (show pps'))
-         verboseTell "spc_basic" ("ctps=" ++ (show ctps))
+         verboseTell "spc" ("pps'=" ++ (show pps'))
+         verboseTell "spc" ("ctps=" ++ (show ctps))
+         
+         updateVertexes (c^.graph) [(niv,niv')]
+         c<-get
          
          updateVertexes (c^.graph) $ zip pps pps'
          c<-get
@@ -465,9 +557,9 @@ spc_arbitraryLE niv nbpv le i = do
          let pcs'  = pcs_AddNeighbours ctps pcs
          let cs    = cs_AddNeighbours ctps pcs'
 
-         verboseTell "spc_basic" ("pcs=" ++ (show pcs))
-         verboseTell "spc_basic" ("pcs'=" ++ (show pcs'))
-         verboseTell "spc_basic" ("cs=" ++ (show cs))
+         verboseTell "spc" ("pcs=" ++ (show pcs))
+         verboseTell "spc" ("pcs'=" ++ (show pcs'))
+         verboseTell "spc" ("cs=" ++ (show cs))
 
          updateVertexes (c^.graph) $ zip pcs pcs'
          c<-get
@@ -484,10 +576,13 @@ spc_arbitraryLE niv nbpv le i = do
 
          
          c<-get
-         verboseTell "spc_basic" ("graph=" ++ (show $ c^.graph))
+         verboseTell "spc" ("graph=" ++ (show $ c^.graph))
          
-         assign entrancesLow $ c^.entrancesLow |> niv'
-         return $ nbpv'^.value
+         --assign entrancesLow $ c^.entrancesLow |> niv'
+         --return $ nbpv'^.value
+         return 
+            $ set spc_arbitraryLE_niv niv' 
+            $ set spc_arbitraryLE_output (nbpv'^.value) defaultReturn_of_spc_arbitraryLE
    where
     updateVertexes :: AdjacencyMap Vertex -> [(Vertex,Vertex)] -> A ()
     updateVertexes oldGraph zip_Vold_Vnew = do 
@@ -511,9 +606,9 @@ spc_arbitraryLE niv nbpv le i = do
             where
                ppps2pcs :: Vertex -> A [Vertex]
                ppps2pcs ppps = do
-                  verboseTell "spc_basic" ("ppps2pcs ppps=" ++ (show ppps))
+                  verboseTell "spc" ("ppps2pcs ppps=" ++ (show ppps))
                   pcs <- getCorrections ppps
-                  verboseTell "spc_basic" ("ppps2pcs pcs=" ++ (show pcs))
+                  verboseTell "spc" ("ppps2pcs pcs=" ++ (show pcs))
                   return $ elems pcs
 
     newCorrections niv pps = mapM (correctionToPrediction niv) pps
