@@ -98,7 +98,7 @@ L.makeLenses ''Vertex
 data Return_of_spc_arbitraryLE = Return_of_spc_arbitraryLE {
     _spc_arbitraryLE_output :: Word8
    ,_spc_arbitraryLE_niv    :: Vertex
-   }
+   } deriving (Show)
 L.makeLenses ''Return_of_spc_arbitraryLE
 
 
@@ -200,7 +200,7 @@ step = do
     Just a -> do
 
       yieldM (do
-         r<-maybe (return 0) spc_feed_correction $ a^.input
+         r<-maybe (return 0) spc_fecale $ a^.input
          c<-get
          return (r,c)
          )
@@ -403,7 +403,7 @@ attachPreviousPredictionsToNewInput :: Vertex   --New input
 defaultReturn_of_spc_arbitraryLE = Return_of_spc_arbitraryLE {
     _spc_arbitraryLE_output = 0
    ,_spc_arbitraryLE_niv    = vertexEmpty
-   }
+   } 
 
 {-- =================================================
 Save Predict Correct - basic version
@@ -485,6 +485,84 @@ spc_feed_correction i = do
          
       ifSingle_PCS_then_spc_arbitraryLE _ = return $ Nothing
 
+
+
+{-- =================================================
+Save Predict Correct - Feed Every Correction to spc_arbitraryLE As Low Entrance
+--}
+spc_fecale :: Word8 -> A Word8
+spc_fecale i = do
+   c<-get
+   ni <- getTick
+   np <- getTick
+   let niv  = setVertexValueAndVNumber i ni vertexEmpty --new input vertex
+   let nbpv = setVertexValueAndVNumber i np vertexEmpty --basic prediction
+   le <- lastLowEntrance
+   
+   rospcale<- spc_arbitraryLE niv nbpv le i
+   
+   c<-get
+   assign entrancesLow $ c^.entrancesLow |> (rospcale^.spc_arbitraryLE_niv)
+   c<-get
+   
+   -- .................
+   
+   run_exhaustive_spc_arbitraryLE_over_corrections $ Just rospcale
+   
+   -- .................
+   
+   return $ rospcale^.spc_arbitraryLE_output
+   
+   where
+      setVertexValueAndVNumber i ni v = set value i $ set vnumber ni v
+      
+      le2ple (Just le) = (return.nothingIfnotSingle.elems) =<< getSamePrevious le
+         where 
+            nothingIfnotSingle [x] = Just x
+            nothingIfnotSingle _   = Nothing
+
+      le2ple Nothing   = return Nothing
+      
+      le2pps (Just le) = (return.elems) =<< getPredictions le
+      le2pps Nothing   = return []
+      
+      pps2pcs pps = previousCorrectionS pps
+      
+      previousCorrectionS :: [Vertex] -> A [Vertex]
+      previousCorrectionS pps = concatMapM (pps2pcs') pps
+         where 
+            pps2pcs' :: Vertex -> A [Vertex]
+            pps2pcs' pps = do
+               pcs <- getCorrections pps
+               return $ elems pcs
+               
+      
+      ifSingle_PCS_then_spc_arbitraryLE [niv] = do 
+         c<-get
+         np <- getTick
+         let nbpv = setVertexValueAndVNumber (niv^.value) np vertexEmpty
+         le <- (return.listToMaybe.elems) =<< getSamePrevious niv
+         rospcale<- spc_arbitraryLE niv nbpv le (niv^.value)
+         return $ Just $ rospcale
+         
+         
+      ifSingle_PCS_then_spc_arbitraryLE _ = return $ Nothing
+      
+      
+      pcs_pps_ple_le (Just r) = pps2pcs =<< le2pps =<< le2ple (Just $ r^.spc_arbitraryLE_niv)
+      pcs_pps_ple_le _        = return []
+
+
+      run_exhaustive_spc_arbitraryLE_over_corrections r = do 
+         pcs<- pcs_pps_ple_le r
+         verboseTell "spc_faloc" ("spc_faloc pcs1= " ++ (show pcs))
+         continueIfHas_pcs pcs
+         
+         where 
+            continueIfHas_pcs [] = ifSingle_PCS_then_spc_arbitraryLE []
+            continueIfHas_pcs pcs = 
+               run_exhaustive_spc_arbitraryLE_over_corrections 
+                  =<< ifSingle_PCS_then_spc_arbitraryLE pcs
 
 
 {-- =================================================
