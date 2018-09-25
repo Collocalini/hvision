@@ -286,6 +286,12 @@ closestByTickAfterL v vs = closestByTickAfterL_common l
    where
       l = dropWhile (<=v) vs
 
+closestByTickBeforeL :: Vertex -> [Vertex] -> Maybe Vertex
+closestByTickBeforeL v vs = listToMaybe l
+   where
+      l = dropWhile (>=v) vs
+
+
 closestByTickAfterL_common :: Eq a => [a] -> Maybe a
 closestByTickAfterL_common l
    |l==[] = Nothing
@@ -355,7 +361,9 @@ correctionToPrediction :: Vertex --input
                        -> A (Vertex, VertexLabel) --Correction
 correctionToPrediction i p = do
    nct <- getTick
-   let nc = set value absErr $ set vnumber nct vertexEmpty
+   let nc = set value (i^.value - p^.value) $ set vnumber nct vertexEmpty
+   return (nc, CPositive)
+   {-let nc = set value absErr $ set vnumber nct vertexEmpty
    case (err<0) of
       False -> return (nc, CPositive)
       True  -> return (nc, CNegative)
@@ -367,7 +375,7 @@ correctionToPrediction i p = do
       
       iv  = fromIntegral $ i^.value
       pv  = fromIntegral $ p^.value
-
+-}
 
 
 adjustPrediction :: Vertex --Prediction about input
@@ -844,9 +852,9 @@ spc_arbitraryLEpdn niv nbpv le i = do
          updateVertexes (c^.graph) [(niv,niv')]
          c<-get
 
-         assign graph
-            $ overlay (c^.graph) (fromAdjacencyList [(niv' , [nbpv'])
-                                          , (nbpv', [niv'])])
+         assign_graph_overlayC [(niv' , [nbpv'])
+                              , (nbpv', [niv'])]
+                              
          --assign entrancesLow $ c^.entrancesLow |> niv'
          --return $ nbpv'^.value
          return $ Just
@@ -863,25 +871,36 @@ spc_arbitraryLEpdn niv nbpv le i = do
 
          
    where
-    updateVertexes :: AdjacencyMap Vertex -> [(Vertex,Vertex)] -> A ()
+    updateVertexes :: AdjacencyMap Vertex -> [(Vertex,Vertex)] -> A () -- update graph from argument
     updateVertexes oldGraph zip_Vold_Vnew = do 
       assign graph $ 
             foldl' (\g (l,r)-> replaceVertex l r g) oldGraph zip_Vold_Vnew
     
+    updateVertexesC :: [(Vertex,Vertex)] -> A () -- update graph from context
+    updateVertexesC zip_Vold_Vnew = do 
+      c<-get
+      let oldGraph = c^.graph
+      updateVertexes oldGraph zip_Vold_Vnew
     
+    assign_graph_overlayC :: [(Vertex, [Vertex])] -> A ()
+    assign_graph_overlayC al = do 
+      c<-get
+      assign graph $ overlay (c^.graph) (fromAdjacencyList al)
 
     previousPredictionS le = (return.elems) =<< getPredictions le
     
     previousCorrection :: Vertex -> A (Maybe Vertex)
     previousCorrection pp = do 
       ppp<- goBack pp
+      verboseTell "spc" ("previousCorrection pp=" ++ (show pp))
+      verboseTell "spc" ("previousCorrection ppp=" ++ (show ppp))
       ppp2pc ppp
       
       where 
          goBack :: Vertex -> A (Maybe Vertex)
          goBack v = do 
             pv <- getSamePrevious v
-            return $ closestByTickAfterL v $ elems pv
+            return $ listToMaybe $ elems pv
  
          ppp2pc :: Maybe Vertex -> A (Maybe Vertex)
          ppp2pc (Just ppp) = do
@@ -916,7 +935,7 @@ spc_arbitraryLEpdn niv nbpv le i = do
     pp_AddNeighboursNoCtp pp nbpv' = addNeighbour_flipArgs [Same,Forward] nbpv' pp
           
 
-    pc_AddNeighbours ctp pc = addNeighbour (fst ctp) [Same,Forward] pc
+    pc_AddNeighbours pc ctp = addNeighbour pc [Same,Forward] (fst ctp)
 
 
     cs_AddNeighbours ctp pc pp =
@@ -930,11 +949,11 @@ spc_arbitraryLEpdn niv nbpv le i = do
     
     
     continueIfppsDidntMatchNiv :: Vertex 
-                              -> [Vertex] 
-                              -> Vertex
-                              -> [(Vertex,VertexLabel)] 
-                              -> Vertex
-                              -> A (Maybe Return_of_spc_arbitraryLE)
+                                 -> [Vertex] 
+                                 -> Vertex
+                                 -> [(Vertex, VertexLabel)] 
+                                 -> Vertex
+                                 -> A (Maybe Return_of_spc_arbitraryLE)
     continueIfppsDidntMatchNiv niv [pp] nbpv [ctp] le
       |ctpIsNot0 = run 
       |otherwise = runCaseMatched
@@ -942,7 +961,7 @@ spc_arbitraryLEpdn niv nbpv le i = do
          ctpIsNot0 = (fst ctp)^.value /= 0 
          
          run = do 
-            c<-get
+
             let niv'  = niv_AddNeighbours niv nbpv le
             let nbpv' = nbpv_adjustPrediction ctp $ nbpv_AddNeighbours nbpv niv pp
             let le'   = addNeighbour le [Same,Forward] niv
@@ -952,25 +971,21 @@ spc_arbitraryLEpdn niv nbpv le i = do
             verboseTell "spc" ("pp'=" ++ (show pp'))
             verboseTell "spc" ("ctp=" ++ (show ctp))
             
-            updateVertexes (c^.graph) [(niv,niv')
-                                      ,(pp, pp')
-                                      ,(le, le')]
-            c<-get
+            updateVertexesC [(niv,niv')
+                           ,(pp, pp')
+                           ,(le, le')]
+
             
-            assign graph
-               $ overlay (c^.graph) (fromAdjacencyList 
+            assign_graph_overlayC
                   [
                       (niv' , [nbpv', le'])
                      ,(nbpv', [niv' , pp'])
                      ,(le'  , [niv'])
-                     
 
                      ,(pp' , [(fst ctp), nbpv'])
 
-                  ])
-            
-            c<-get
-
+                  ]
+ 
             pc      <- previousCorrection pp'
             continueIfHas_pc pc pp' ctp niv' nbpv'
          
@@ -982,45 +997,60 @@ spc_arbitraryLEpdn niv nbpv le i = do
                               -> Vertex 
                               -> A (Maybe Return_of_spc_arbitraryLE)
          continueIfHas_pc (Just pc) pp' ctp niv' nbpv' = do 
-            c<-get
-            let pc'  = pc_AddNeighbours ctp pc 
-            let cs   = cs_AddNeighbours ctp pc' pp'
 
+            let pc'  = pc_AddNeighbours pc ctp
+            let cs   = cs_AddNeighbours ctp pc' pp'
+            
+            verboseTell "spc" ("continueIfHas_pc")
             verboseTell "spc" ("pc=" ++ (show pc))
             verboseTell "spc" ("pc'=" ++ (show pc'))
             verboseTell "spc" ("cs=" ++ (show cs))
 
-            updateVertexes (c^.graph) $ [(pc, pc')
-                                        ,(fst ctp,cs)
-                                        ]
+            updateVertexesC [(pc, pc')
+                            ,(fst ctp,cs)
+                            ]
 
-            c<-get
 
-            assign graph
-               $ overlay (c^.graph) (fromAdjacencyList 
+
+            assign_graph_overlayC
                   [
                       (pc' , [fst ctp])
                      ,(cs  , [pc'])
                      ,(cs  , [pp'])
-                  ])
+                  ]
 
             
             c<-get
             verboseTell "spc" ("graph=" ++ (show $ c^.graph))
             
-            --assign entrancesLow $ c^.entrancesLow |> niv'
-            --return $ nbpv'^.value
             return $ Just
                $ set spc_arbitraryLE_niv niv' 
                $ set spc_arbitraryLE_output (nbpv'^.value) defaultReturn_of_spc_arbitraryLE
                
-         continueIfHas_pc Nothing _ _ niv' nbpv' = return $ Just
+         continueIfHas_pc Nothing pp' ctp niv' nbpv' = do 
+            let cs   = addNeighbour (fst ctp) [Input] pp'
+            
+            verboseTell "spc" ("continueIfHas_pc no pc")
+            verboseTell "spc" ("cs=" ++ (show cs))
+            
+            updateVertexesC [(fst ctp,cs)]
+
+            assign_graph_overlayC
+                  [
+                  (cs  , [pp'])
+                  ]
+
+            
+            c<-get
+            verboseTell "spc" ("graph=" ++ (show $ c^.graph))
+            
+            return $ Just
                $ set spc_arbitraryLE_niv niv' 
                $ set spc_arbitraryLE_output (nbpv'^.value) defaultReturn_of_spc_arbitraryLE
          
          
          runCaseMatched = do 
-            c<-get
+
             let niv'  = niv_AddNeighbours niv nbpv le
             let nbpv' = nbpv_AddNeighbours nbpv niv pp
             let le'   = addNeighbour le [Same,Forward] niv
@@ -1030,22 +1060,20 @@ spc_arbitraryLEpdn niv nbpv le i = do
             verboseTell "spc" ("pp'=" ++ (show pp'))
             verboseTell "spc" ("ctp=" ++ (show ctp))
             
-            updateVertexes (c^.graph) [(niv,niv')
-                                      ,(pp, pp')
-                                      ,(le, le')]
+            updateVertexesC [(niv,niv')
+                           ,(pp, pp')
+                           ,(le, le')]
               
-            c<-get
-            assign graph
-               $ overlay (c^.graph) (fromAdjacencyList 
+
+            assign_graph_overlayC
                   [
                       (niv' , [nbpv', le'])
                      ,(nbpv', [niv' , pp'])
                      ,(le'  , [niv'])
                      
+                     ,(pp' , [nbpv'])
 
-                     ,(pp' , [nbpv'])  --VV
-
-                  ])
+                  ]
             
             return $ Just
                $ set spc_arbitraryLE_niv niv' 
@@ -1053,13 +1081,8 @@ spc_arbitraryLEpdn niv nbpv le i = do
 
             
             
-    continueIfppsDidntMatch :: Vertex 
-                                 -> [Vertex]
-                                 -> Vertex
-                                 -> [(Vertex, VertexLabel)]
-                                 -> Vertex
-                                 -> A (Maybe Return_of_spc_arbitraryLE)
-    continueIfppsDidntMatch niv pps nbpv ctps le = do 
+
+    continueIfppsDidntMatchNiv niv pps nbpv ctps le = do 
       tell $ DL.singleton 
          $ OtherError ("Didn't match pattern: continueIfppsDidntMatchNiv niv [pp] nbpv [ctp] le "
             ++ (show niv) ++ "; "
