@@ -22,10 +22,11 @@ executable diser
                  , parsec -any
                  , pipes -any
                 -- , pure-fft -any
-                 , algebraic-graphs -any
+                 , algebraic-graphs <=0.1.1.1
                  , lens -any
                 -- , data-lens-template ==2.2
                  , extra -any
+                 , either -any
     main-is: Main.hs
     buildable: True
     extensions: CPP
