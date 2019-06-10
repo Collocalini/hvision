@@ -1,0 +1,15 @@
+base="your path here"
+
+echo "export PKG_CONFIG_PATH=\"$base/ffmpeg/lib/pkgconfig\"
+export \
+LD_PRELOAD=\"$base/ffmpeg/lib/libavfilter.so.6\":\
+\"$base/ffmpeg/lib/libswscale.so.4\":\
+\"$base/ffmpeg/lib/libpostproc.so.54\":\
+\"$base/ffmpeg/lib/libavdevice.so.57\":\
+\"$base/ffmpeg/lib/libavcodec.so.57\":\
+\"$base/ffmpeg/lib/libavformat.so.57\":\
+\"$base/ffmpeg/lib/libavutil.so.55\":\
+\"$base/ffmpeg/lib/libswresample.so.2\"
+
+export LD_LIBRARY_PATH=\"$base/ffmpeg/lib\"
+"
