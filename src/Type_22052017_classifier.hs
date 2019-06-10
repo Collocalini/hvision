@@ -35,6 +35,7 @@ import qualified Data.DList as DL
 import Data.List
 import Data.Maybe
 import Data.Word
+import Data.Int
 import Control.Monad.RWS.Lazy
 import Control.Monad.Except
 import Control.Monad.Extra
@@ -82,7 +83,7 @@ L.makeLenses ''Neighbour
 
 --Data Graph = Seq Vertex
 data Vertex = V
-     { _value  :: Word8  -- value
+     { _value  :: Int8  -- value
       ,_vnumber :: Integer  -- generation counter. Vertexes are created sequentially and this is number in sequence of creation
       ,_metric :: Word
       ,_neighbours :: Set Neighbour
@@ -406,7 +407,9 @@ attachPreviousPredictionsToNewInput :: Vertex   --New input
 -}
 
 
-
+zeroIfLessThen0 x
+   |x<0 = 0
+   |otherwise = x
 
 defaultReturn_of_spc_arbitraryLE = Return_of_spc_arbitraryLE {
     _spc_arbitraryLE_output = 0
@@ -425,14 +428,14 @@ spc_basic i = do
    let nbpv = setVertexValueAndVNumber i np vertexEmpty --basic prediction
    le <- lastLowEntrance
    
-   rospcale<- spc_arbitraryLE niv nbpv le i
+   rospcale<- spc_arbitraryLE niv nbpv le $ fromIntegral i
    
    c<-get
    assign entrancesLow $ c^.entrancesLow |> (rospcale^.spc_arbitraryLE_niv)
    return $ rospcale^.spc_arbitraryLE_output
    
    where
-      setVertexValueAndVNumber i ni v = set value i $ set vnumber ni v
+      setVertexValueAndVNumber i ni v = set value (fromIntegral i) $ set vnumber ni v
 
 
 {-- =================================================
@@ -447,7 +450,7 @@ spc_feed_correction i = do
    let nbpv = setVertexValueAndVNumber i np vertexEmpty --basic prediction
    le <- lastLowEntrance
    
-   rospcale<- spc_arbitraryLE niv nbpv le i
+   rospcale<- spc_arbitraryLE niv nbpv le $ fromIntegral i
    
    c<-get
    assign entrancesLow $ c^.entrancesLow |> (rospcale^.spc_arbitraryLE_niv)
@@ -466,7 +469,7 @@ spc_feed_correction i = do
    return $ rospcale^.spc_arbitraryLE_output
    
    where
-      setVertexValueAndVNumber i ni v = set value i $ set vnumber ni v
+      setVertexValueAndVNumber i ni v = set value (fromIntegral i) $ set vnumber ni v
       
       le2pps (Just le) = (return.elems) =<< getPredictions le
       le2pps Nothing   = return []
@@ -507,7 +510,7 @@ spc_fecale i = do
    let nbpv = setVertexValueAndVNumber i np vertexEmpty --basic prediction
    le <- lastLowEntrance
    
-   rospcale<- spc_arbitraryLE niv nbpv le i
+   rospcale<- spc_arbitraryLE niv nbpv le $ fromIntegral i
    
    c<-get
    assign entrancesLow $ c^.entrancesLow |> (rospcale^.spc_arbitraryLE_niv)
@@ -522,7 +525,7 @@ spc_fecale i = do
    return $ rospcale^.spc_arbitraryLE_output
    
    where
-      setVertexValueAndVNumber i ni v = set value i $ set vnumber ni v
+      setVertexValueAndVNumber i ni v = set value (fromIntegral i) $ set vnumber ni v
       
       le2ple (Just le) = (return.nothingIfnotSingle.elems) =<< getSamePrevious le
          where 
@@ -588,7 +591,7 @@ spc_fecalePDN i = do
    let nbpv = setVertexValueAndVNumber i np vertexEmpty --basic prediction
    le <- lastLowEntrance
    
-   rospcale<- spc_arbitraryLEpdn niv nbpv le i
+   rospcale<- spc_arbitraryLEpdn niv nbpv le $ fromIntegral i
    
    c<-get
    assign entrancesLow $ c^.entrancesLow |> ((fromJust rospcale)^.spc_arbitraryLE_niv)
@@ -603,7 +606,7 @@ spc_fecalePDN i = do
    return $ (fromJust rospcale)^.spc_arbitraryLE_output
    
    where
-      setVertexValueAndVNumber i ni v = set value i $ set vnumber ni v
+      setVertexValueAndVNumber i ni v = set value (fromIntegral i) $ set vnumber ni v
       
       le2ple (Just le) = (return.nothingIfnotSingle.elems) =<< getSamePrevious le
          where 
@@ -666,7 +669,7 @@ Save Predict Correct - arbitrary last low entrance version
 spc_arbitraryLE   :: Vertex 
                   -> Vertex 
                   -> Maybe Vertex 
-                  -> Word8 
+                  -> Int8 
                   -> A Return_of_spc_arbitraryLE
 spc_arbitraryLE niv nbpv le i = do
    c<-get
@@ -685,7 +688,7 @@ spc_arbitraryLE niv nbpv le i = do
          --return $ nbpv'^.value
          return 
             $ set spc_arbitraryLE_niv niv' 
-            $ set spc_arbitraryLE_output (nbpv'^.value) defaultReturn_of_spc_arbitraryLE
+            $ set spc_arbitraryLE_output (fromIntegral $ zeroIfLessThen0 $ nbpv'^.value) defaultReturn_of_spc_arbitraryLE
 
       Just v  -> do --not first entry. General computation.
          verboseTell "spc" ("spc_arbitraryLE")
@@ -756,7 +759,7 @@ spc_arbitraryLE niv nbpv le i = do
          --return $ nbpv'^.value
          return 
             $ set spc_arbitraryLE_niv niv' 
-            $ set spc_arbitraryLE_output (nbpv'^.value) defaultReturn_of_spc_arbitraryLE
+            $ set spc_arbitraryLE_output (fromIntegral $ zeroIfLessThen0 $ nbpv'^.value) defaultReturn_of_spc_arbitraryLE
    where
     updateVertexes :: AdjacencyMap Vertex -> [(Vertex,Vertex)] -> A ()
     updateVertexes oldGraph zip_Vold_Vnew = do 
@@ -840,7 +843,7 @@ match.
 spc_arbitraryLEpdn   :: Vertex 
                   -> Vertex 
                   -> Maybe Vertex 
-                  -> Word8 
+                  -> Int8 
                   -> A (Maybe Return_of_spc_arbitraryLE)
 spc_arbitraryLEpdn niv nbpv le i = do
    c<-get
@@ -859,7 +862,7 @@ spc_arbitraryLEpdn niv nbpv le i = do
          --return $ nbpv'^.value
          return $ Just
             $ set spc_arbitraryLE_niv niv' 
-            $ set spc_arbitraryLE_output (nbpv'^.value) defaultReturn_of_spc_arbitraryLE
+            $ set spc_arbitraryLE_output (fromIntegral $ zeroIfLessThen0 $ nbpv'^.value) defaultReturn_of_spc_arbitraryLE
 
       Just v  -> do --not first entry. General computation.
          verboseTell "spc" ("spc_arbitraryLEpdn")
@@ -1025,7 +1028,7 @@ spc_arbitraryLEpdn niv nbpv le i = do
             
             return $ Just
                $ set spc_arbitraryLE_niv niv' 
-               $ set spc_arbitraryLE_output (nbpv'^.value) defaultReturn_of_spc_arbitraryLE
+               $ set spc_arbitraryLE_output (fromIntegral $ zeroIfLessThen0 $ nbpv'^.value) defaultReturn_of_spc_arbitraryLE
                
          continueIfHas_pc Nothing pp' ctp niv' nbpv' = do 
             let cs   = addNeighbour (fst ctp) [Input] pp'
@@ -1046,7 +1049,7 @@ spc_arbitraryLEpdn niv nbpv le i = do
             
             return $ Just
                $ set spc_arbitraryLE_niv niv' 
-               $ set spc_arbitraryLE_output (nbpv'^.value) defaultReturn_of_spc_arbitraryLE
+               $ set spc_arbitraryLE_output (fromIntegral $ zeroIfLessThen0 $ nbpv'^.value) defaultReturn_of_spc_arbitraryLE
          
          
          runCaseMatched = do 
@@ -1077,7 +1080,7 @@ spc_arbitraryLEpdn niv nbpv le i = do
             
             return $ Just
                $ set spc_arbitraryLE_niv niv' 
-               $ set spc_arbitraryLE_output (nbpv'^.value) defaultReturn_of_spc_arbitraryLE
+               $ set spc_arbitraryLE_output (fromIntegral $ zeroIfLessThen0 $ nbpv'^.value) defaultReturn_of_spc_arbitraryLE
 
             
             
